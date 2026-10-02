@@ -160,46 +160,7 @@ function home(){
     <div class="fz">${fuelSvg(c.n)}</div><div class="st">${t[c.n]?'운행 중':''}</div></button>`).join("")}</div>
   ${FOOT}`;
 }
-function pickCar(v){ car=v; view="trip"; /* ---------- 기관 연결 ---------- */
-const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button></div>`;
-function clearCaches(){
-  Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","odoMap","driver","trips"].includes(k)||k.startsWith("last_")) localStorage.removeItem(k); });
-  driver=null; car=null; resv=null; fuelMap={}; odoMap={}; applyCfg([],[]); cfgReady=false; cfgFail=false;
-}
-function setGas(u){ if(u!==ls.get("gas","")) clearCaches(); ls.set("gas",u); GAS_URL=u; }
-function openConnect(){ view="connect"; render(); }
-function shareLink(){ return location.href.split("?")[0].split("#")[0]+"?gas="+encodeURIComponent(GAS_URL); }
-function connectView(){
-  const has=!!GAS_URL;
-  $("#app").innerHTML = `${has?'<button class="back" onclick="goHome()">← 돌아가기</button>':''}
-  <div class="head"><h1>기관<span>연결</span></h1></div>
-  <div class="card"><b style="font-size:17px">구글시트 연결 주소 입력</b>
-  <p class="lbl" style="margin-top:6px;line-height:1.6">기관별로 만든 Apps Script 웹 앱 URL을 한 번만 입력하면 이 기기에 저장됩니다.</p>
-  <input type="text" id="gasIn" placeholder="https://script.google.com/macros/s/.../exec" value="${GAS_URL}" style="margin-top:12px;font-size:14px">
-  <div class="err" id="err"></div><button class="main" id="gasBtn" onclick="connect()">연결하기</button></div>
-  ${has?`<div class="card"><b style="font-size:17px">직원용 접속 링크</b>
-  <p class="lbl" style="margin-top:6px;line-height:1.6">이 링크로 접속하면 주소 입력 없이 바로 연결됩니다. 직원들에게 공유하세요.</p>
-  <button class="main pu" onclick="copyLink()">🔗 링크 복사</button></div>`:''}`;
-}
-async function connect(){
-  const u=$("#gasIn").value.trim(), err=$("#err"), btn=$("#gasBtn");
-  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) return err.textContent="주소가 올바르지 않습니다. https://script.google.com/.../exec 형태여야 합니다.";
-  err.textContent=""; btn.disabled=true; btn.textContent="연결 확인 중...";
-  try{
-    const j=await (await fetch(u+"?action=list")).json();
-    if(!j.ok) throw new Error("x");
-    setGas(u); view="home"; car=null; render(); loadResv();
-  }catch(e){ err.textContent="연결에 실패했습니다. 웹 앱 배포(액세스: 모든 사용자)와 주소를 확인해 주세요."; btn.disabled=false; btn.textContent="연결하기"; }
-}
-async function copyLink(){
-  const l=shareLink();
-  try{ await navigator.clipboard.writeText(l); toast("링크가 복사되었습니다"); }catch(e){ prompt("아래 링크를 복사하세요",l); }
-}
-
-{ const q=new URLSearchParams(location.search).get("gas");
-  if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
-  else GAS_URL=ls.get("gas",""); }
-render(); loadResv(); }
+function pickCar(v){ car=v; view="trip"; render(); loadResv(); }
 function useResv(id){
   const r=resv.find(x=>x.id===id); if(!r) return;
   pre={id:r.id, dest:r.dest, purpose:r.purpose}; pickCar(r.car);
@@ -331,6 +292,45 @@ async function save(){
   }catch(x){ err.textContent="저장에 실패했습니다. 인터넷 연결과 GAS 주소를 확인하고 다시 눌러 주세요."; btn.disabled=false; btn.textContent="💾 저장"; }
 }
 
+/* ---------- 기관 연결 ---------- */
+const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button></div>`;
+function clearCaches(){
+  Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","odoMap","driver","trips"].includes(k)||k.startsWith("last_")) localStorage.removeItem(k); });
+  driver=null; car=null; resv=null; fuelMap={}; odoMap={}; applyCfg([],[]); cfgReady=false; cfgFail=false;
+}
+function setGas(u){ if(u!==ls.get("gas","")) clearCaches(); ls.set("gas",u); GAS_URL=u; }
+function openConnect(){ view="connect"; render(); }
+function shareLink(){ return location.href.split("?")[0].split("#")[0]+"?gas="+encodeURIComponent(GAS_URL); }
+function connectView(){
+  const has=!!GAS_URL;
+  $("#app").innerHTML = `${has?'<button class="back" onclick="goHome()">← 돌아가기</button>':''}
+  <div class="head"><h1>기관<span>연결</span></h1></div>
+  <div class="card"><b style="font-size:17px">구글시트 연결 주소 입력</b>
+  <p class="lbl" style="margin-top:6px;line-height:1.6">기관별로 만든 Apps Script 웹 앱 URL을 한 번만 입력하면 이 기기에 저장됩니다.</p>
+  <input type="text" id="gasIn" placeholder="https://script.google.com/macros/s/.../exec" value="${GAS_URL}" style="margin-top:12px;font-size:14px">
+  <div class="err" id="err"></div><button class="main" id="gasBtn" onclick="connect()">연결하기</button></div>
+  ${has?`<div class="card"><b style="font-size:17px">직원용 접속 링크</b>
+  <p class="lbl" style="margin-top:6px;line-height:1.6">이 링크로 접속하면 주소 입력 없이 바로 연결됩니다. 직원들에게 공유하세요.</p>
+  <button class="main pu" onclick="copyLink()">🔗 링크 복사</button></div>`:''}`;
+}
+async function connect(){
+  const u=$("#gasIn").value.trim(), err=$("#err"), btn=$("#gasBtn");
+  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) return err.textContent="주소가 올바르지 않습니다. https://script.google.com/.../exec 형태여야 합니다.";
+  err.textContent=""; btn.disabled=true; btn.textContent="연결 확인 중...";
+  try{
+    const j=await (await fetch(u+"?action=list")).json();
+    if(!j.ok) throw new Error("x");
+    setGas(u); view="home"; car=null; render(); loadResv();
+  }catch(e){ err.textContent="연결에 실패했습니다. 웹 앱 배포(액세스: 모든 사용자)와 주소를 확인해 주세요."; btn.disabled=false; btn.textContent="연결하기"; }
+}
+async function copyLink(){
+  const l=shareLink();
+  try{ await navigator.clipboard.writeText(l); toast("링크가 복사되었습니다"); }catch(e){ prompt("아래 링크를 복사하세요",l); }
+}
+
+{ const q=new URLSearchParams(location.search).get("gas");
+  if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
+  else GAS_URL=ls.get("gas",""); }
 render(); loadResv();
 </script>
 </body>
