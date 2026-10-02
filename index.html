@@ -55,7 +55,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 
 <script>
 /* ===== 설정 (여기만 수정하세요) ===== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxU_okOZibMmphHoGBwoLvPQVPYDzpt9xVnK-YK-bARUFV9wE3kMRlz5gWIdHc_VTz_/exec";
+const GAS_URL = "https://script.google.com/macros/library/d/1Dr5_ES6ZNbR_HhY-qqQUhEYByLU1LpD8_GyOTcuoR19k35v6wiv5ePUB/6";
 // 차량·운전자 목록은 구글시트의 "차량", "운전자" 탭에서 불러옵니다 (코드 수정 불필요)
 const PALETTE = [{c:"#3b5bdb",bg:"#eaeefd"},{c:"#3d8361",bg:"#e8f3ee"},{c:"#b5622e",bg:"#faeee4"},{c:"#7239d8",bg:"#f1edff"},{c:"#d6336c",bg:"#fdeaf1"},{c:"#0c8599",bg:"#e3f6f9"}];
 let DRIVERS = [], CARS = [];
@@ -71,9 +71,10 @@ const trips = () => ls.get("trips",{});
 const info = n => CARS.find(c=>c.n===n);
 let driver = ls.get("driver",null), car=null, view="home", pre=null, resv=null, purpose="업무", rPurpose="업무", fuelOn=false, fixOn=false, gauge="";
 const GAUGES = ["가득","3/4","1/2","1/4","거의 없음"];
-let fuelMap = ls.get("fuelMap",{});
+let fuelMap = ls.get("fuelMap",{}), odoMap = ls.get("odoMap",{});
 { const c=ls.get("cfg",null);
-  applyCfg(c?c.cars:[{n:"카니발",p:"26더 2348"},{n:"아반떼",p:"176나 2958"},{n:"레이",p:"247서 7430"}], c?c.drivers:["김유진"]); }
+  applyCfg(c?c.cars:[{n:"카니발",p:"26더 2348"},{n:"아반떼",p:"176나 2958"},{n:"레이",p:"247서 7430"}], c?c.drivers:[]); }
+let cfgReady = !!ls.get("cfg",null), cfgFail = false;
 function fuelSvg(n){
   const g=fuelMap[n], i=GAUGES.indexOf(g);
   if(i<0) return `<span style="color:#bbb">주유량 기록 없음</span>`;
@@ -91,8 +92,13 @@ async function loadResv(){
     const r = await fetch(GAS_URL+"?action=list"); const j = await r.json();
     resv = j.ok ? j.list : [];
     if(j.ok && j.fuel){ fuelMap=j.fuel; ls.set("fuelMap",fuelMap); }
-    if(j.ok && j.cars && j.drivers){ applyCfg(j.cars,j.drivers); ls.set("cfg",{cars:j.cars,drivers:j.drivers}); }
-  }catch(e){ resv = []; }
+    if(j.ok && j.odo){ odoMap=j.odo; ls.set("odoMap",odoMap); }
+    const o=$("#odoS"); if(o && o.dataset.auto==="1" && odoMap[car]) o.value=odoMap[car];
+    if(j.ok && j.cars && j.drivers){
+      applyCfg(j.cars,j.drivers); ls.set("cfg",{cars:j.cars,drivers:j.drivers}); cfgReady=true; cfgFail=false;
+      if(driver && !DRIVERS.includes(driver)){ driver=null; localStorage.removeItem("driver"); car=null; view="home"; }
+    }
+  }catch(e){ resv = []; cfgFail=true; }
   if(!driver) pickDriver(); else if(view==="home" && !car) home();
   if(view==="reserve") reserveView();
 }
@@ -109,7 +115,13 @@ function goHome(){ car=null; view="home"; pre=null; render(); }
 function pickDriver(){
   $("#app").innerHTML = `<div class="head"><h1>차량<span>운행</span>일지</h1></div>
   <div class="card"><b style="font-size:17px">운전자를 선택하세요</b><p class="lbl" style="margin-top:6px">한 번 선택하면 이 기기에 저장됩니다.</p>
-  <div class="opts" style="flex-wrap:wrap;margin-top:12px">${DRIVERS.map(n=>`<button style="flex:1 1 45%" onclick="setDriver('${n}')">👤 ${n}</button>`).join("")}</div></div>`;
+  ${driverBox()}</div>`;
+}
+function driverBox(){
+  if(DRIVERS.length) return `<div class="opts" style="flex-wrap:wrap;margin-top:12px">${DRIVERS.map(n=>`<button style="flex:1 1 45%" onclick="setDriver('${n}')">👤 ${n}</button>`).join("")}</div>`;
+  if(cfgFail && !cfgReady) return `<div class="empty" style="margin-top:12px">목록을 불러오지 못했습니다.<br>인터넷 연결과 GAS 주소를 확인해 주세요.</div>`;
+  if(!cfgReady) return `<div class="empty" style="margin-top:12px">불러오는 중...</div>`;
+  return `<div class="empty" style="margin-top:12px">시트에서 이름을 설정해 주세요.</div>`;
 }
 function setDriver(n){ driver=n; ls.set("driver",n); goHome(); }
 function changeDriver(){ driver=null; render(); }
@@ -133,7 +145,7 @@ function home(){
     <div class="ic" style="background:${c.bg}">${svgCar(c.c)}</div><div class="pl" style="color:${c.c}">${c.p}</div><div class="nm">${c.n}</div>
     <div class="fz">${fuelSvg(c.n)}</div><div class="st">${t[c.n]?'운행 중':''}</div></button>`).join("")}</div>`;
 }
-function pickCar(v){ car=v; view="trip"; render(); }
+function pickCar(v){ car=v; view="trip"; render(); loadResv(); }
 function useResv(id){
   const r=resv.find(x=>x.id===id); if(!r) return;
   pre={id:r.id, dest:r.dest, purpose:r.purpose}; pickCar(r.car);
@@ -183,11 +195,11 @@ async function cancelResv(id){
 
 /* ---------- 출발 ---------- */
 function depart(){
-  const last = ls.get("last_"+car,""), c=info(car);
+  const last = odoMap[car] || ls.get("last_"+car,""), c=info(car);
   $("#app").innerHTML = `<button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 출발</h2><div class="lbl">${c.p} · 운전자 ${driver}</div>
   ${pre?`<div class="info">📅 예약: <b>${pre.dest}</b> (${pre.purpose})</div>`:''}
-  <label>출발 계기판 (km)</label><input type="number" id="odoS" inputmode="numeric" placeholder="예: 52340" value="${last}">
+  <label>출발 계기판 (km)</label><input type="number" id="odoS" inputmode="numeric" placeholder="예: 52340" value="${last}" data-auto="1" oninput="this.dataset.auto=''">
   <div class="lbl" style="margin-top:6px">출발 날짜·시간은 버튼을 누르면 자동 기록됩니다.</div>
   <div class="err" id="err"></div><button class="main" onclick="doDepart()">🚀 출발</button></div>`;
 }
@@ -240,7 +252,7 @@ async function save(){
   try{
     const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)})).json();
     if(!j.ok) throw new Error(j.error||"fail");
-    const t=trips(); delete t[car]; ls.set("trips",t); ls.set("last_"+car,e);
+    const t=trips(); delete t[car]; ls.set("trips",t); ls.set("last_"+car,e); odoMap[car]=String(e); ls.set("odoMap",odoMap);
     if(gauge){ fuelMap[car]=gauge; ls.set("fuelMap",fuelMap); }
     if(tr.resId && resv) resv=resv.filter(r=>r.id!==tr.resId);
     toast("저장되었습니다"); setTimeout(goHome,1400);
