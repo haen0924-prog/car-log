@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>차량운행일지</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            500: '#7c3aed',
+                            600: '#6d28d9',
+                            700: '#5b21b6',
+                            800: '#4c1d95',
+                        },
+                        appBg: '#f6f5f1'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f6f5f1;
+            -webkit-tap-highlight-color: transparent;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .touch-action-manipulation {
+            touch-action: manipulation;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableReportArea, #printableReportArea * {
+                visibility: visible;
+            }
+            #printableReportArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 15px;
+                background: white;
+                color: black;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#f6f5f1] text-slate-800 min-h-screen flex flex-col justify-between select-none">
+
+    <!-- Header -->
+    <header class="max-w-md mx-auto w-full px-5 pt-6 pb-2 flex items-center justify-between">
+        <div>
+            <span id="orgNameHeader" class="text-[11px] font-bold text-indigo-600 tracking-tight block">강원도농아인협회</span>
+            <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-tight">
+                차량<span class="text-indigo-600">운행</span>일지
+            </h1>
+        </div>
+        <div class="flex items-center space-x-2">
+            <!-- Driver Select Pill Button -->
+            <button id="openDriverModalBtn" class="flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-100 transition-all text-xs font-semibold">
+                <i class="fa-solid fa-user text-indigo-500"></i>
+                <span id="currentDriverDisplay">미선택</span>
+            </button>
+            
+            <!-- Reservation FAB Header Button -->
+            <div class="flex flex-col items-center">
+                <button id="openReservationModalBtn" class="w-11 h-11 bg-gradient-to-tr from-indigo-600 to-purple-500 hover:from-indigo-700 hover:to-purple-600 text-white rounded-full flex items-center justify-center shadow-md shadow-indigo-200 transition-all active:scale-95">
+                    <i class="fa-regular fa-calendar-check text-lg"></i>
+                </button>
+                <span class="text-[10px] font-bold text-indigo-600 mt-0.5">예약</span>
+            </div>
+
+            <!-- Settings Button -->
+            <button id="openSettingsBtn" class="w-9 h-9 text-slate-400 hover:text-slate-700 flex items-center justify-center rounded-full hover:bg-slate-200/50 transition-colors ml-1">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-md mx-auto w-full flex-1 px-5 py-3 space-y-5">
+
+        <!-- VIEW 1: HOME DASHBOARD -->
+        <div id="homeDashboardView" class="space-y-5">
+            
+            <!-- Today Date Card -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                <span class="text-xs font-semibold text-slate-400 block mb-1">오늘</span>
+                <div class="flex items-center justify-between">
+                    <span id="todayDateDisplay" class="text-base font-bold text-slate-800">2026년 10월 1일 (목요일)</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-50"></span>
+                </div>
+            </div>
+
+            <!-- Notice / Quick Guide Card -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-1">
+                <h3 class="text-sm font-bold text-slate-800">
+                    오늘 예약이 있다면 <span class="text-indigo-600">카드를 탭해주세요</span>
+                </h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    예약이 없거나 직접 기록할 경우<br>
+                    <span class="text-indigo-600 font-medium">아래 차량 버튼</span>을 탭하면 바로 이동합니다
+                </p>
+            </div>
+
+            <!-- Today's Reservation List -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500">오늘 예약</span>
+                    <div class="flex items-center space-x-2">
+                        <button id="viewReservationsQuickBtn" class="text-[11px] text-slate-600 font-semibold hover:underline flex items-center gap-1">
+                            <i class="fa-regular fa-calendar-days text-indigo-500"></i> 예약 현황 확인
+                        </button>
+                        <span class="text-slate-300 text-[10px]">|</span>
+                        <button id="addTodayResQuickBtn" class="text-[11px] text-indigo-600 font-semibold hover:underline">
+                            + 예약 추가
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="todayReservationsContainer">
+                    <div class="bg-white/60 border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center text-slate-400 text-xs font-medium">
+                        오늘 예약이 없습니다
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Selection Cards -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500">차량 선택</span>
+                    <button id="manageVehiclesBtn" class="text-[11px] text-indigo-600 font-bold hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-car-rear"></i> 차량 수정/관리
+                    </button>
+                </div>
+
+                <div id="vehicleCardsGrid" class="grid grid-cols-3 gap-3">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Sync & Local Records Action Section -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-slate-700 block">운행 이력 및 보고서</span>
+                    <span id="syncStatusBadge" class="text-[11px] text-slate-400">클라우드 실시간 동기화 중</span>
+                </div>
+                <div class="flex space-x-1.5">
+                    <button id="openMonthlyReportBtn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-2 rounded-xl transition-all border border-indigo-100 flex items-center gap-1">
+                        <i class="fa-solid fa-print"></i> 월별 보고서
+                    </button>
+                    <button id="openLogsModalBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition-all">
+                        기록 보기
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- VIEW 2: LOGGING / DRIVING FORM VIEW -->
+        <div id="drivingFormView" class="hidden space-y-4">
+            
+            <!-- Active Selected Vehicle Top Bar -->
+            <div class="flex items-center justify-between bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100">
+                <button id="backToHomeBtn" class="text-slate-400 hover:text-slate-700 text-xs font-bold flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> 홈으로
+                </button>
+                <div class="text-right">
+                    <span id="selectedVehiclePlate" class="text-[10px] font-bold text-indigo-600 block">26더 2348</span>
+                    <span id="selectedVehicleName" class="text-sm font-bold text-slate-800">카니발</span>
+                </div>
+            </div>
+
+            <!-- STEP 1: START DRIVING -->
+            <div id="readyStepCard" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+                <div class="flex items-center space-x-2">
+                    <span class="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-play"></i>
+                    </span>
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-base">운행 출발 등록</h2>
+                        <p class="text-xs text-slate-400">출발 전 계기판을 확인 후 시작하세요.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3.5 rounded-xl space-y-2 border border-slate-200/70">
+                    <label for="startOdometer" class="block text-xs font-semibold text-slate-600">
+                        <i class="fa-solid fa-gauge-high mr-1 text-slate-400"></i> 출발 계기판 거리 (km)
+                    </label>
+                    <div class="relative">
+                        <input type="number" id="startOdometer" inputmode="numeric" placeholder="예: 12540" 
+                            class="w-full pl-3 pr-12 py-3 bg-white border border-slate-300 rounded-xl text-xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">km</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                        <span>이전 최종 거리: <strong id="lastOdometerVal" class="text-slate-800">0</strong> km</span>
+                        <button type="button" id="useLastOdometerBtn" class="text-indigo-600 font-bold hover:underline">자동 입력</button>
+                    </div>
+                </div>
+
+                <button id="startDriveBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center space-x-2 transition-all touch-action-manipulation">
+                    <i class="fa-solid fa-car-side text-lg"></i>
+                    <span class="text-base">출발 등록하기</span>
+                </button>
+            </div>
+
+            <!-- STEP 2: ARRIVAL & LOGGING -->
+            <div id="drivingStepCard" class="hidden bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+                <div class="bg-amber-50 border border-amber-200/80 rounded-xl p-3.5 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="relative flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold text-amber-800 block">운행 중</span>
+                            <span id="departTimeBadge" class="text-[11px] text-amber-700">출발: --:--</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-400 block">출발 계기판</span>
+                        <span id="activeStartKmBadge" class="font-bold text-amber-900 text-sm">0 km</span>
+                    </div>
+                </div>
+
+                <form id="arrivalForm" class="space-y-3.5" onsubmit="return false;">
+                    <!-- Destination -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            도착지 명칭 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="destinationInput" placeholder="예: 원주시지회 / 강원도청" required
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" />
+                        <!-- Frequently used destinations -->
+                        <div id="frequentDestinationsContainer" class="flex flex-wrap gap-1.5 mt-2">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">운행목적 <span class="text-red-500">*</span></label>
+                            <select id="purposeSelect" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+                                <option value="업무">업무</option>
+                                <option value="통역">통역</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">동승 인원</label>
+                            <div class="flex items-center">
+                                <input type="number" id="passengerCount" value="1" min="1" max="50"
+                                    class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none text-center" />
+                                <span class="ml-1.5 text-xs text-slate-500 shrink-0">명</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-slate-600">
+                                도착 계기판 거리 (km) <span class="text-red-500">*</span>
+                            </label>
+                            <span id="calculatedDistanceBadge" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                                운행: 0 km
+                            </span>
+                        </div>
+                        <div class="relative">
+                            <input type="number" id="endOdometer" inputmode="numeric" placeholder="출발거리보다 커야합니다" required
+                                class="w-full pl-3 pr-12 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" />
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">km</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Fuel Gauge Input Card -->
+                    <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-3.5 space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-gas-pump text-indigo-600"></i> 도착 후 잔여 기름 양 (연료 상태)
+                            </label>
+                            <span id="fuelGaugePercentDisplay" class="text-xs font-extrabold text-indigo-700 bg-white px-2 py-0.5 rounded-lg border border-indigo-200">
+                                80%
+                            </span>
+                        </div>
+
+                        <!-- Graphic Gauge Bar -->
+                        <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden p-0.5 shadow-inner flex items-center relative">
+                            <div id="fuelGaugeBar" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300" style="width: 80%;"></div>
+                        </div>
+
+                        <!-- Fuel Quick Percentage Buttons & Range Slider -->
+                        <div class="flex items-center space-x-2 pt-1">
+                            <input type="range" id="fuelGaugeSlider" min="0" max="100" step="5" value="80" class="w-full accent-indigo-600 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div class="grid grid-cols-4 gap-1.5 text-center">
+                            <button type="button" onclick="setFuelGaugeValue(25)" class="py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 shadow-sm">25% (E)</button>
+                            <button type="button" onclick="setFuelGaugeValue(50)" class="py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 shadow-sm">50%</button>
+                            <button type="button" onclick="setFuelGaugeValue(75)" class="py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 shadow-sm">75%</button>
+                            <button type="button" onclick="setFuelGaugeValue(100)" class="py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 shadow-sm">100% (F)</button>
+                        </div>
+                    </div>
+
+                    <!-- Maintenance / Fuel Section Toggle -->
+                    <div class="border-t border-slate-100 pt-2">
+                        <button type="button" id="toggleMaintBtn" class="text-xs text-slate-600 hover:text-indigo-600 font-semibold flex items-center justify-between w-full py-1">
+                            <span><i class="fa-solid fa-gas-pump text-amber-500 mr-1"></i> 주유 / 정비 기록 추가 (선택)</span>
+                            <i id="maintChevron" class="fa-solid fa-chevron-down text-xs transition-transform"></i>
+                        </button>
+
+                        <div id="maintFormGroup" class="hidden mt-2 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60 space-y-2.5">
+                            <div class="flex gap-3 text-xs text-slate-700">
+                                <label class="flex items-center space-x-1 cursor-pointer">
+                                    <input type="radio" name="maintType" value="주유" checked class="text-indigo-600"> <span>주유</span>
+                                </label>
+                                <label class="flex items-center space-x-1 cursor-pointer">
+                                    <input type="radio" name="maintType" value="정비" class="text-indigo-600"> <span>차량 정비</span>
+                                </label>
+                                <label class="flex items-center space-x-1 cursor-pointer">
+                                    <input type="radio" name="maintType" value="기타" class="text-indigo-600"> <span>기타</span>
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <input type="number" step="0.1" id="maintFuelLiters" placeholder="주유량(L)" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs" />
+                                <input type="number" id="maintCost" placeholder="금액(원)" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs" />
+                                <input type="text" id="maintMemo" placeholder="내용/비고" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex gap-2">
+                        <button type="button" id="cancelDriveBtn" class="w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-3 rounded-xl text-sm transition-all">
+                            취소
+                        </button>
+                        <button type="button" id="saveDriveBtn" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center space-x-2 transition-all touch-action-manipulation">
+                            <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                            <span class="text-base">도착 저장</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-200/60 text-slate-400 text-center text-[11px] py-3 mt-4">
+        <p>© <span id="orgNameFooter">강원도농아인협회</span> | 차량 스마트 운행관리</p>
+    </footer>
+
+    <!-- DRIVER SELECT MODAL -->
+    <div id="driverModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <h3 class="font-bold text-lg text-slate-800">운전자 성명</h3>
+                <p class="text-xs text-slate-400">사용자를 선택하거나 이름을 입력하세요.</p>
+            </div>
+
+            <div class="space-y-2">
+                <input type="text" id="driverModalInput" placeholder="운전자 이름" 
+                    class="w-full px-4 py-3 border border-slate-300 rounded-xl text-center font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                
+                <div class="flex flex-wrap gap-1.5 justify-center pt-1" id="quickDriverChips">
+                    <!-- Quick names -->
+                </div>
+            </div>
+
+            <button id="saveDriverModalBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-all">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- VEHICLE MANAGEMENT MODAL -->
+    <div id="vehicleManageModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center">
+                    <i class="fa-solid fa-car-rear text-indigo-600 mr-2"></i> 차량 목록 및 수정
+                </h3>
+                <button id="closeVehicleModalBtn" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Vehicle Form for Add / Edit -->
+            <div class="bg-indigo-50/50 p-3.5 rounded-2xl border border-indigo-100 space-y-2.5">
+                <div class="flex justify-between items-center">
+                    <span id="vehFormTitle" class="text-xs font-bold text-indigo-900">새 차량 등록</span>
+                    <button id="resetVehFormBtn" class="text-[10px] text-slate-400 hover:text-slate-600 hidden">취소</button>
+                </div>
+                <input type="hidden" id="editVehId" value="" />
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="vehNameInput" placeholder="차종 (예: 카니발)" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none" />
+                    <input type="text" id="vehPlateInput" placeholder="차량번호 (예: 26더 2348)" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none" />
+                </div>
+                <div class="flex justify-between items-center pt-1">
+                    <div class="flex space-x-2 text-xs">
+                        <label class="flex items-center space-x-1"><input type="radio" name="vehColor" value="indigo" checked> <span class="text-indigo-600 font-bold">보라</span></label>
+                        <label class="flex items-center space-x-1"><input type="radio" name="vehColor" value="emerald"> <span class="text-emerald-600 font-bold">초록</span></label>
+                        <label class="flex items-center space-x-1"><input type="radio" name="vehColor" value="amber"> <span class="text-amber-600 font-bold">주황</span></label>
+                    </div>
+                    <button id="saveVehicleBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
+                        저장
+                    </button>
+                </div>
+            </div>
+
+            <!-- Existing Vehicles List -->
+            <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="vehicleManageList">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- RESERVATION MANAGEMENT MODAL -->
+    <div id="reservationModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center">
+                    <i class="fa-regular fa-calendar-check text-indigo-600 mr-2"></i> 차량 예약 관리
+                </h3>
+                <button id="closeReservationModalBtn" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="flex bg-slate-100 p-1 rounded-xl">
+                <button id="resTabNew" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-indigo-700 shadow-sm transition-all">신규 예약 등록</button>
+                <button id="resTabList" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition-all">예약 현황 목록</button>
+            </div>
+
+            <!-- TAB 1: NEW RESERVATION FORM -->
+            <form id="resNewForm" class="space-y-3 overflow-y-auto pr-1 flex-1" onsubmit="return false;">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">예약 차량 <span class="text-red-500">*</span></label>
+                    <select id="resVehicleSelect" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">예약 날짜 <span class="text-red-500">*</span></label>
+                        <input type="date" id="resDateInput" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">신청자/운전자</label>
+                        <input type="text" id="resApplicantInput" placeholder="이름" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">시작 시간</label>
+                        <input type="time" id="resStartTime" value="09:00" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">종료 예정</label>
+                        <input type="time" id="resEndTime" value="18:00" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none" />
+                    </div>
+                </div>
+
+                <button type="button" id="submitReservationBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md text-xs transition-all">
+                    예약 등록하기
+                </button>
+            </form>
+
+            <!-- TAB 2: RESERVATIONS LIST -->
+            <div id="resListContainer" class="hidden space-y-2 overflow-y-auto pr-1 flex-1 max-h-[350px]">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- DRIVING LOGS HISTORY MODAL -->
+    <div id="logsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center">
+                    <i class="fa-solid fa-list-check text-indigo-600 mr-2"></i> 운행 이력 기록
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <button id="exportCsvBtn" class="text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg border border-slate-200 font-medium">
+                        <i class="fa-solid fa-file-excel mr-1 text-emerald-600"></i> Excel 다운
+                    </button>
+                    <button id="closeLogsModalBtn" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="logsListContainer" class="flex-1 overflow-y-auto space-y-2.5 max-h-[60vh] pr-1">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MONTHLY REPORT & PRINT MODAL -->
+    <div id="monthlyReportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-5 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3 no-print">
+                <h3 class="font-bold text-slate-800 text-base flex items-center">
+                    <i class="fa-solid fa-file-signature text-indigo-600 mr-2"></i> 월별 운행 통계 및 결재 서식
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <button id="printReportBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow transition-all flex items-center gap-1">
+                        <i class="fa-solid fa-print"></i> 인쇄 / PDF 저장
+                    </button>
+                    <button id="closeMonthlyReportBtn" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Bar (No Print) -->
+            <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 text-xs no-print">
+                <div class="flex items-center space-x-2">
+                    <label class="font-bold text-slate-600 shrink-0">조회 월:</label>
+                    <input type="month" id="reportMonthSelect" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 font-bold outline-none">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="font-bold text-slate-600 shrink-0">차량:</label>
+                    <select id="reportVehicleSelect" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 font-bold outline-none">
+                        <option value="ALL">전체 차량</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Monthly Summary Cards (No Print) -->
+            <div class="grid grid-cols-3 gap-2.5 no-print">
+                <div class="bg-indigo-50/70 border border-indigo-100 p-3 rounded-2xl text-center">
+                    <span class="text-[10px] font-bold text-indigo-500 block">총 주행거리</span>
+                    <span id="reportTotalDist" class="text-base font-extrabold text-indigo-900">0 km</span>
+                </div>
+                <div class="bg-emerald-50/70 border border-emerald-100 p-3 rounded-2xl text-center">
+                    <span class="text-[10px] font-bold text-emerald-600 block">총 운행 횟수</span>
+                    <span id="reportTotalTrips" class="text-base font-extrabold text-emerald-900">0 회</span>
+                </div>
+                <div class="bg-amber-50/70 border border-amber-100 p-3 rounded-2xl text-center">
+                    <span class="text-[10px] font-bold text-amber-600 block">총 주유/정비 금액</span>
+                    <span id="reportTotalCost" class="text-base font-extrabold text-amber-900">0 원</span>
+                </div>
+            </div>
+
+            <!-- Printable Official Table Document Area -->
+            <div id="printableReportArea" class="flex-1 overflow-y-auto pr-1 text-slate-900 space-y-4">
+                <!-- Header Title & Approval Box -->
+                <div class="flex justify-between items-end border-b-2 border-slate-800 pb-3">
+                    <div>
+                        <span id="printOrgName" class="text-xs font-bold text-indigo-700 block">강원도농아인협회</span>
+                        <h2 id="printReportTitle" class="text-xl font-extrabold tracking-tight">2026년 10월 차량 운행일지</h2>
+                    </div>
+                    <!-- Approval Sign Table -->
+                    <table class="border-collapse border border-slate-400 text-[10px] text-center w-48">
+                        <tr class="bg-slate-100 font-bold">
+                            <td class="border border-slate-400 p-1 w-1/3">담당자</td>
+                            <td class="border border-slate-400 p-1 w-1/3">검토자</td>
+                            <td class="border border-slate-400 p-1 w-1/3">승인자</td>
+                        </tr>
+                        <tr class="h-10">
+                            <td class="border border-slate-400 p-1"></td>
+                            <td class="border border-slate-400 p-1"></td>
+                            <td class="border border-slate-400 p-1"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Main Official Data Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-slate-400 text-[11px] text-center">
+                        <thead>
+                            <tr class="bg-slate-100 font-bold border-b border-slate-400">
+                                <th class="border border-slate-400 p-1.5">날짜</th>
+                                <th class="border border-slate-400 p-1.5">차량</th>
+                                <th class="border border-slate-400 p-1.5">운전자</th>
+                                <th class="border border-slate-400 p-1.5">행선지(목적)</th>
+                                <th class="border border-slate-400 p-1.5">출발시각</th>
+                                <th class="border border-slate-400 p-1.5">도착시각</th>
+                                <th class="border border-slate-400 p-1.5">출발km</th>
+                                <th class="border border-slate-400 p-1.5">도착km</th>
+                                <th class="border border-slate-400 p-1.5">주행km</th>
+                                <th class="border border-slate-400 p-1.5">주유/정비</th>
+                            </tr>
+                        </thead>
+                        <tbody id="printableTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center">
+                    <i class="fa-solid fa-sliders text-indigo-600 mr-2"></i> 환경 설정 및 연동
+                </h3>
+                <button id="closeSettingsBtn" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Organization Name Setting -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700">기관 / 협회 명칭</label>
+                <input type="text" id="orgNameInput" placeholder="예: 강원도농아인협회" 
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <p class="text-[11px] text-slate-400">상단 및 하단에 표시되는 소속 기관명을 설정합니다.</p>
+            </div>
+
+            <div class="space-y-1.5 pt-2 border-t border-slate-100">
+                <label class="block text-xs font-bold text-slate-700">Google Apps Script Web App URL</label>
+                <input type="text" id="webhookUrlInput" placeholder="https://script.google.com/macros/s/.../exec" 
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    구글 시트에 운행 일지를 자동 누적 저장하려면 배포된 앱스스크립트 URL을 등록해 주세요.
+                </p>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
+                <button id="clearLocalDataBtn" class="text-xs text-red-600 hover:underline font-bold">
+                    <i class="fa-solid fa-trash-can mr-1"></i> 데이터 초기화
+                </button>
+                <button id="saveSettingsBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow">
+                    저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-full shadow-2xl z-50 flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none transform translate-y-4">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">저장되었습니다</span>
+    </div>
+
+    <script>
+        // STORAGE KEYS
+        const STORAGE_ORG_NAME = 'kadd_org_name';
+        const STORAGE_DRIVER = 'kadd_driver_name';
+        const STORAGE_VEHICLES = 'kadd_vehicles_list';
+        const STORAGE_ACTIVE_DRIVE = 'kadd_active_drive';
+        const STORAGE_LOGS = 'kadd_drive_logs';
+        const STORAGE_RESERVATIONS = 'kadd_reservations';
+        const STORAGE_WEBHOOK = 'kadd_webhook_url';
+
+        // DEFAULT VEHICLES LIST
+        const DEFAULT_VEHICLES = [
+            { id: 'veh1', name: '카니발', plate: '26더 2348', color: 'indigo', icon: 'fa-van-shuttle', fuelLevel: 80 },
+            { id: 'veh2', name: '아반떼', plate: '176나 2958', color: 'emerald', icon: 'fa-car-side', fuelLevel: 50 },
+            { id: 'veh3', name: '레이', plate: '247서 7430', color: 'amber', icon: 'fa-car', fuelLevel: 30 }
+        ];
+
+        // APP STATE
+        let orgName = localStorage.getItem(STORAGE_ORG_NAME) || '강원도농아인협회';
+        let currentDriver = localStorage.getItem(STORAGE_DRIVER) || '김유진';
+        let vehicles = JSON.parse(localStorage.getItem(STORAGE_VEHICLES) || JSON.stringify(DEFAULT_VEHICLES));
+        let selectedVehicle = vehicles[0] || DEFAULT_VEHICLES[0];
+        let webhookUrl = localStorage.getItem(STORAGE_WEBHOOK) || '';
+        let activeDrive = JSON.parse(localStorage.getItem(STORAGE_ACTIVE_DRIVE) || 'null');
+        let driveLogs = JSON.parse(localStorage.getItem(STORAGE_LOGS) || '[]');
+        let reservations = JSON.parse(localStorage.getItem(STORAGE_RESERVATIONS) || '[]');
+        let pendingReservationId = null;
+
+        // DOM ELEMENTS
+        const orgNameHeader = document.getElementById('orgNameHeader');
+        const orgNameFooter = document.getElementById('orgNameFooter');
+        const orgNameInput = document.getElementById('orgNameInput');
+
+        const currentDriverDisplay = document.getElementById('currentDriverDisplay');
+        const todayDateDisplay = document.getElementById('todayDateDisplay');
+        const vehicleCardsGrid = document.getElementById('vehicleCardsGrid');
+        const todayReservationsContainer = document.getElementById('todayReservationsContainer');
+        const syncStatusBadge = document.getElementById('syncStatusBadge');
+
+        // Views & Form Inputs
+        const homeDashboardView = document.getElementById('homeDashboardView');
+        const drivingFormView = document.getElementById('drivingFormView');
+        const backToHomeBtn = document.getElementById('backToHomeBtn');
+        const selectedVehiclePlate = document.getElementById('selectedVehiclePlate');
+        const selectedVehicleName = document.getElementById('selectedVehicleName');
+
+        const readyStepCard = document.getElementById('readyStepCard');
+        const drivingStepCard = document.getElementById('drivingStepCard');
+        const startOdometer = document.getElementById('startOdometer');
+        const lastOdometerVal = document.getElementById('lastOdometerVal');
+        const useLastOdometerBtn = document.getElementById('useLastOdometerBtn');
+        const startDriveBtn = document.getElementById('startDriveBtn');
+
+        const departTimeBadge = document.getElementById('departTimeBadge');
+        const activeStartKmBadge = document.getElementById('activeStartKmBadge');
+        const destinationInput = document.getElementById('destinationInput');
+        const purposeSelect = document.getElementById('purposeSelect');
+        const passengerCount = document.getElementById('passengerCount');
+        const endOdometer = document.getElementById('endOdometer');
+        const calculatedDistanceBadge = document.getElementById('calculatedDistanceBadge');
+
+        // Fuel Gauge Elements
+        const fuelGaugeSlider = document.getElementById('fuelGaugeSlider');
+        const fuelGaugeBar = document.getElementById('fuelGaugeBar');
+        const fuelGaugePercentDisplay = document.getElementById('fuelGaugePercentDisplay');
+
+        // Maintenance Inputs
+        const toggleMaintBtn = document.getElementById('toggleMaintBtn');
+        const maintFormGroup = document.getElementById('maintFormGroup');
+        const maintChevron = document.getElementById('maintChevron');
+        const maintFuelLiters = document.getElementById('maintFuelLiters');
+        const maintCost = document.getElementById('maintCost');
+        const maintMemo = document.getElementById('maintMemo');
+
+        const cancelDriveBtn = document.getElementById('cancelDriveBtn');
+        const saveDriveBtn = document.getElementById('saveDriveBtn');
+
+        // Modals
+        const driverModal = document.getElementById('driverModal');
+        const openDriverModalBtn = document.getElementById('openDriverModalBtn');
+        const driverModalInput = document.getElementById('driverModalInput');
+        const quickDriverChips = document.getElementById('quickDriverChips');
+        const saveDriverModalBtn = document.getElementById('saveDriverModalBtn');
+
+        const vehicleManageModal = document.getElementById('vehicleManageModal');
+        const manageVehiclesBtn = document.getElementById('manageVehiclesBtn');
+        const closeVehicleModalBtn = document.getElementById('closeVehicleModalBtn');
+        const vehNameInput = document.getElementById('vehNameInput');
+        const vehPlateInput = document.getElementById('vehPlateInput');
+        const editVehId = document.getElementById('editVehId');
+        const vehFormTitle = document.getElementById('vehFormTitle');
+        const resetVehFormBtn = document.getElementById('resetVehFormBtn');
+        const saveVehicleBtn = document.getElementById('saveVehicleBtn');
+        const vehicleManageList = document.getElementById('vehicleManageList');
+
+        const reservationModal = document.getElementById('reservationModal');
+        const openReservationModalBtn = document.getElementById('openReservationModalBtn');
+        const addTodayResQuickBtn = document.getElementById('addTodayResQuickBtn');
+        const viewReservationsQuickBtn = document.getElementById('viewReservationsQuickBtn');
+        const closeReservationModalBtn = document.getElementById('closeReservationModalBtn');
+        const resTabNew = document.getElementById('resTabNew');
+        const resTabList = document.getElementById('resTabList');
+        const resNewForm = document.getElementById('resNewForm');
+        const resListContainer = document.getElementById('resListContainer');
+        const resVehicleSelect = document.getElementById('resVehicleSelect');
+        const resDateInput = document.getElementById('resDateInput');
+        const resApplicantInput = document.getElementById('resApplicantInput');
+        const resStartTime = document.getElementById('resStartTime');
+        const resEndTime = document.getElementById('resEndTime');
+        const submitReservationBtn = document.getElementById('submitReservationBtn');
+
+        const logsModal = document.getElementById('logsModal');
+        const openLogsModalBtn = document.getElementById('openLogsModalBtn');
+        const closeLogsModalBtn = document.getElementById('closeLogsModalBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const logsListContainer = document.getElementById('logsListContainer');
+
+        const settingsModal = document.getElementById('settingsModal');
+        const openSettingsBtn = document.getElementById('openSettingsBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const webhookUrlInput = document.getElementById('webhookUrlInput');
+        const clearLocalDataBtn = document.getElementById('clearLocalDataBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+        // Monthly Report DOM
+        const monthlyReportModal = document.getElementById('monthlyReportModal');
+        const openMonthlyReportBtn = document.getElementById('openMonthlyReportBtn');
+        const closeMonthlyReportBtn = document.getElementById('closeMonthlyReportBtn');
+        const reportMonthSelect = document.getElementById('reportMonthSelect');
+        const reportVehicleSelect = document.getElementById('reportVehicleSelect');
+        const reportTotalDist = document.getElementById('reportTotalDist');
+        const reportTotalTrips = document.getElementById('reportTotalTrips');
+        const reportTotalCost = document.getElementById('reportTotalCost');
+        const printOrgName = document.getElementById('printOrgName');
+        const printReportTitle = document.getElementById('printReportTitle');
+        const printableTableBody = document.getElementById('printableTableBody');
+        const printReportBtn = document.getElementById('printReportBtn');
+
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastMsg = document.getElementById('toastMsg');
+
+        function updateSyncStatus() {
+            if (!syncStatusBadge) return;
+            if (webhookUrl) {
+                syncStatusBadge.textContent = '구글 시트 연동 중';
+                syncStatusBadge.className = 'text-[11px] text-emerald-600 font-semibold';
+            } else {
+                syncStatusBadge.textContent = '클라우드 실시간 동기화 중';
+                syncStatusBadge.className = 'text-[11px] text-slate-400';
+            }
+        }
+
+        window.setDriverName = function(name) {
+            if (driverModalInput) driverModalInput.value = name;
+        };
+
+        // VEHICLES GRID RENDER WITH GRAPHIC FUEL GAUGE
+        function renderVehicleCards() {
+            if (!vehicleCardsGrid) return;
+
+            if (vehicles.length === 0) {
+                vehicleCardsGrid.innerHTML = `
+                    <div class="col-span-3 bg-white p-4 rounded-xl text-center text-xs text-slate-400">
+                        등록된 차량이 없습니다. '차량 수정/관리'를 눌러 등록해 주세요.
+                    </div>
+                `;
+                return;
+            }
+
+            vehicleCardsGrid.innerHTML = vehicles.map(veh => {
+                let borderTopColor = 'border-indigo-500';
+                let iconBg = 'bg-indigo-50 text-indigo-600';
+                let plateColor = 'text-indigo-600';
+
+                if (veh.color === 'emerald') {
+                    borderTopColor = 'border-emerald-500';
+                    iconBg = 'bg-emerald-50 text-emerald-600';
+                    plateColor = 'text-emerald-600';
+                } else if (veh.color === 'amber') {
+                    borderTopColor = 'border-amber-600';
+                    iconBg = 'bg-amber-50 text-amber-700';
+                    plateColor = 'text-amber-700';
+                }
+
+                const fuel = veh.fuelLevel !== undefined ? veh.fuelLevel : 70;
+                let fuelColorClass = 'bg-emerald-500';
+                let fuelTextColor = 'text-emerald-600';
+                if (fuel <= 20) {
+                    fuelColorClass = 'bg-red-500';
+                    fuelTextColor = 'text-red-500';
+                } else if (fuel <= 45) {
+                    fuelColorClass = 'bg-amber-500';
+                    fuelTextColor = 'text-amber-600';
+                }
+
+                return `
+                    <div onclick="selectVehicleAndDrive('${veh.id}')" 
+                        class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 border-t-4 ${borderTopColor} text-center cursor-pointer hover:shadow-md transition-all active:scale-95 flex flex-col items-center justify-between">
+                        
+                        <div class="w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center my-1 text-lg">
+                            <i class="fa-solid ${veh.icon || 'fa-car'}"></i>
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] font-bold ${plateColor} block">${veh.plate}</span>
+                            <span class="text-sm font-bold text-slate-800 truncate max-w-full block mb-2">${veh.name}</span>
+                        </div>
+
+                        <div class="w-full bg-slate-100 p-1.5 rounded-xl border border-slate-200/60 mt-1">
+                            <div class="flex items-center justify-between text-[10px] font-bold mb-1">
+                                <span class="text-slate-400 flex items-center gap-0.5"><i class="fa-solid fa-gas-pump text-[9px]"></i> 연료</span>
+                                <span class="${fuelTextColor}">${fuel}%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div class="h-full ${fuelColorClass} transition-all duration-300" style="width: ${fuel}%;"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+
+            if (resVehicleSelect) {
+                resVehicleSelect.innerHTML = vehicles.map(v => `<option value="${v.name}">${v.name} (${v.plate})</option>`).join('');
+            }
+            
+            if (reportVehicleSelect) {
+                const currentVal = reportVehicleSelect.value || 'ALL';
+                reportVehicleSelect.innerHTML = `<option value="ALL">전체 차량</option>` + vehicles.map(v => `<option value="${v.name}">${v.name} (${v.plate})</option>`).join('');
+                reportVehicleSelect.value = currentVal;
+            }
+        }
+
+        // FUEL GAUGE HELPERS
+        function updateFuelGaugeUI(val) {
+            const num = parseInt(val, 10) || 0;
+            if (fuelGaugePercentDisplay) fuelGaugePercentDisplay.textContent = `${num}%`;
+            if (fuelGaugeBar) {
+                fuelGaugeBar.style.width = `${num}%`;
+                if (num <= 20) {
+                    fuelGaugeBar.className = "h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full transition-all duration-300";
+                    fuelGaugePercentDisplay.className = "text-xs font-extrabold text-red-600 bg-red-50 px-2 py-0.5 rounded-lg border border-red-200";
+                } else if (num <= 45) {
+                    fuelGaugeBar.className = "h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-300";
+                    fuelGaugePercentDisplay.className = "text-xs font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200";
+                } else {
+                    fuelGaugeBar.className = "h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300";
+                    fuelGaugePercentDisplay.className = "text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200";
+                }
+            }
+        }
+
+        window.setFuelGaugeValue = function(val) {
+            if (fuelGaugeSlider) fuelGaugeSlider.value = val;
+            updateFuelGaugeUI(val);
+        };
+
+        function renderFrequentDestinations() {
+            const destContainer = document.getElementById('frequentDestinationsContainer');
+            if (!destContainer) return;
+
+            if (!driveLogs || driveLogs.length === 0) {
+                destContainer.innerHTML = '';
+                return;
+            }
+
+            const counts = {};
+            const lastIndex = {};
+
+            driveLogs.forEach((log, idx) => {
+                const dest = (log.destination || '').trim();
+                if (dest) {
+                    counts[dest] = (counts[dest] || 0) + 1;
+                    if (lastIndex[dest] === undefined) {
+                        lastIndex[dest] = idx;
+                    }
+                }
+            });
+
+            const sortedDestinations = Object.keys(counts).sort((a, b) => {
+                if (counts[b] !== counts[a]) {
+                    return counts[b] - counts[a];
+                }
+                return lastIndex[a] - lastIndex[b];
+            }).slice(0, 5);
+
+            if (sortedDestinations.length === 0) {
+                destContainer.innerHTML = '';
+                return;
+            }
+
+            destContainer.innerHTML = sortedDestinations.map(dest => `
+                <button type="button" onclick="setDestinationValue('${dest.replace(/'/g, "\\'")}')" 
+                    class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-lg border border-indigo-100 font-semibold transition-colors flex items-center gap-1">
+                    <i class="fa-solid fa-location-dot text-[10px] text-indigo-500"></i> ${dest}
+                </button>
+            `).join('');
+        }
+
+        window.setDestinationValue = function(dest) {
+            if (destinationInput) {
+                destinationInput.value = dest;
+            }
+        };
+
+        window.selectVehicleAndDrive = function(vehId) {
+            const found = vehicles.find(v => v.id === vehId);
+            if (found) selectedVehicle = found;
+            showDrivingFormView();
+        };
+
+        function showHomeView() {
+            homeDashboardView.classList.remove('hidden');
+            drivingFormView.classList.add('hidden');
+            renderTodayReservations();
+        }
+
+        function showDrivingFormView(prefillData = null, resId = null) {
+            homeDashboardView.classList.add('hidden');
+            drivingFormView.classList.remove('hidden');
+            pendingReservationId = resId;
+
+            selectedVehicleName.textContent = selectedVehicle.name;
+            selectedVehiclePlate.textContent = selectedVehicle.plate;
+
+            const currentFuel = selectedVehicle.fuelLevel !== undefined ? selectedVehicle.fuelLevel : 80;
+            setFuelGaugeValue(currentFuel);
+
+            renderDrivingState();
+            renderFrequentDestinations();
+
+            if (prefillData) {
+                destinationInput.value = prefillData.destination || '';
+                purposeSelect.value = prefillData.purpose || '업무';
+                passengerCount.value = prefillData.passengers || 1;
+            }
+        }
+
+        function getLastOdometerForVehicle(vehName) {
+            const vehicleLogs = driveLogs.filter(l => l.vehicle === vehName);
+            return vehicleLogs.length > 0 ? vehicleLogs[0].endOdometer : 0;
+        }
+
+        function updateLastOdometerHint() {
+            const lastVal = getLastOdometerForVehicle(selectedVehicle.name);
+            lastOdometerVal.textContent = lastVal > 0 ? lastVal.toLocaleString() : '0';
+        }
+
+        function renderDrivingState() {
+            updateLastOdometerHint();
+
+            if (activeDrive && activeDrive.vehicle === selectedVehicle.name) {
+                readyStepCard.classList.add('hidden');
+                drivingStepCard.classList.remove('hidden');
+
+                departTimeBadge.textContent = `출발: ${activeDrive.departTime}`;
+                activeStartKmBadge.textContent = `${activeDrive.startOdometer.toLocaleString()} km`;
+                calculateTripDistance();
+            } else {
+                readyStepCard.classList.remove('hidden');
+                drivingStepCard.classList.add('hidden');
+                const lastKm = getLastOdometerForVehicle(selectedVehicle.name);
+                if (lastKm > 0) startOdometer.value = lastKm;
+            }
+        }
+
+        function handleStartDrive() {
+            const startVal = parseInt(startOdometer.value, 10);
+            if (isNaN(startVal) || startVal <= 0) {
+                showToast('올바른 출발 계기판 거리를 입력해 주세요.', 'error');
+                startOdometer.focus();
+                return;
+            }
+
+            const now = new Date();
+            const departDateStr = now.toISOString().split('T')[0];
+            const departTimeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            activeDrive = {
+                driver: currentDriver,
+                vehicle: selectedVehicle.name,
+                startOdometer: startVal,
+                departDate: departDateStr,
+                departTime: departTimeStr,
+                reservationId: pendingReservationId || null
+            };
+            pendingReservationId = null;
+
+            localStorage.setItem(STORAGE_ACTIVE_DRIVE, JSON.stringify(activeDrive));
+            renderDrivingState();
+            showToast('출발 기록이 등록되었습니다. 안전운전 하세요!');
+        }
+
+        function calculateTripDistance() {
+            if (!activeDrive) return;
+            const endVal = parseInt(endOdometer.value, 10);
+            const startVal = activeDrive.startOdometer;
+
+            if (!isNaN(endVal) && endVal > startVal) {
+                const dist = endVal - startVal;
+                calculatedDistanceBadge.textContent = `운행: ${dist.toLocaleString()} km`;
+                calculatedDistanceBadge.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200';
+            } else {
+                calculatedDistanceBadge.textContent = '운행: 0 km';
+                calculatedDistanceBadge.className = 'text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100';
+            }
+        }
+
+        function resetArrivalForm() {
+            destinationInput.value = '';
+            purposeSelect.value = '업무';
+            passengerCount.value = 1;
+            endOdometer.value = '';
+            maintFuelLiters.value = '';
+            maintCost.value = '';
+            maintMemo.value = '';
+            maintFormGroup.classList.add('hidden');
+            maintChevron.classList.remove('rotate-180');
+        }
+
+        async function handleSaveDrive() {
+            if (!activeDrive) return;
+
+            const dest = destinationInput.value.trim();
+            const purpose = purposeSelect.value;
+            const passengers = parseInt(passengerCount.value, 10) || 1;
+            const endVal = parseInt(endOdometer.value, 10);
+            const startVal = activeDrive.startOdometer;
+            const finalFuelVal = parseInt(fuelGaugeSlider.value, 10) || 80;
+
+            if (!dest) {
+                showToast('도착지 명칭을 입력하세요.', 'error');
+                destinationInput.focus();
+                return;
+            }
+
+            if (isNaN(endVal) || endVal <= startVal) {
+                showToast(`도착 계기판은 출발 거리(${startVal} km)보다 커야 합니다.`, 'error');
+                endOdometer.focus();
+                return;
+            }
+
+            let maintString = '-';
+            const selectedMaintType = document.querySelector('input[name="maintType"]:checked')?.value || '주유';
+            const litersVal = maintFuelLiters.value.trim();
+            const costVal = maintCost.value.trim();
+            const memoVal = maintMemo.value.trim();
+
+            if (litersVal || costVal || memoVal) {
+                const parts = [];
+                if (litersVal) parts.push(`${litersVal}L`);
+                if (costVal) parts.push(`${parseInt(costVal, 10).toLocaleString()}원`);
+                if (memoVal) parts.push(memoVal);
+                maintString = `[${selectedMaintType}] ${parts.join(' / ')}`.trim();
+            }
+
+            const targetVehIdx = vehicles.findIndex(v => v.name === activeDrive.vehicle);
+            if (targetVehIdx !== -1) {
+                vehicles[targetVehIdx].fuelLevel = finalFuelVal;
+                localStorage.setItem(STORAGE_VEHICLES, JSON.stringify(vehicles));
+            }
+
+            const now = new Date();
+            const arrivalTimeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const savedTimestamp = now.toLocaleString('ko-KR');
+
+            const newLogRecord = {
+                id: Date.now(),
+                timestamp: savedTimestamp,
+                driver: activeDrive.driver,
+                vehicle: activeDrive.vehicle,
+                departDate: activeDrive.departDate,
+                departTime: activeDrive.departTime,
+                arrivalTime: arrivalTimeStr,
+                destination: dest,
+                purpose: purpose,
+                passengers: passengers,
+                startOdometer: startVal,
+                endOdometer: endVal,
+                distance: endVal - startVal,
+                maintenance: maintString,
+                fuelLevel: `${finalFuelVal}%`,
+                synced: false
+            };
+
+            driveLogs.unshift(newLogRecord);
+            localStorage.setItem(STORAGE_LOGS, JSON.stringify(driveLogs));
+
+            if (activeDrive && activeDrive.reservationId) {
+                const resIdToDelete = activeDrive.reservationId;
+                reservations = reservations.filter(r => r.id !== resIdToDelete);
+                localStorage.setItem(STORAGE_RESERVATIONS, JSON.stringify(reservations));
+                if (window.deleteCloudReservation) {
+                    window.deleteCloudReservation(resIdToDelete);
+                }
+            }
+
+            activeDrive = null;
+            localStorage.removeItem(STORAGE_ACTIVE_DRIVE);
+
+            resetArrivalForm();
+            renderVehicleCards();
+            showHomeView();
+            showToast('운행 일지가 저장되었습니다.');
+
+            if (webhookUrl) {
+                await syncLogToGoogleSheets(newLogRecord);
+            }
+        }
+
+        function renderVehicleManageList() {
+            if (!vehicleManageList) return;
+            if (vehicles.length === 0) {
+                vehicleManageList.innerHTML = `<div class="text-center text-xs text-slate-400 py-4">등록된 차량이 없습니다.</div>`;
+                return;
+            }
+
+            vehicleManageList.innerHTML = vehicles.map(v => `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+                    <div>
+                        <span class="font-bold text-slate-800 text-sm block">${v.name} (${v.plate})</span>
+                        <span class="text-[10px] text-slate-500">색상: ${v.color} | 잔여 연료: ${v.fuelLevel || 80}%</span>
+                    </div>
+                    <div class="flex space-x-1">
+                        <button onclick="editVehicle('${v.id}')" class="px-2.5 py-1 bg-indigo-100 text-indigo-700 font-bold rounded-lg hover:bg-indigo-200 text-xs transition-colors">수정</button>
+                        <button onclick="deleteVehicle('${v.id}')" class="px-2.5 py-1 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 text-xs transition-colors">삭제</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function resetVehicleForm() {
+            editVehId.value = '';
+            vehNameInput.value = '';
+            vehPlateInput.value = '';
+            vehFormTitle.textContent = '새 차량 등록';
+            resetVehFormBtn.classList.add('hidden');
+        }
+
+        window.editVehicle = function(id) {
+            const v = vehicles.find(item => item.id === id);
+            if (!v) return;
+            editVehId.value = v.id;
+            vehNameInput.value = v.name;
+            vehPlateInput.value = v.plate;
+            const radio = document.querySelector(`input[name="vehColor"][value="${v.color}"]`);
+            if (radio) radio.checked = true;
+
+            vehFormTitle.textContent = '차량 정보 수정';
+            resetVehFormBtn.classList.remove('hidden');
+        };
+
+        window.deleteVehicle = function(id) {
+            if (vehicles.length <= 1) {
+                showToast('최소 1대 이상의 차량이 등록되어 있어야 합니다.', 'error');
+                return;
+            }
+            if (!confirm('이 차량을 삭제하시겠습니까?')) return;
+            vehicles = vehicles.filter(v => v.id !== id);
+            localStorage.setItem(STORAGE_VEHICLES, JSON.stringify(vehicles));
+            renderVehicleCards();
+            renderVehicleManageList();
+            showToast('차량이 삭제되었습니다.');
+        };
+
+        function saveVehicle() {
+            const name = vehNameInput.value.trim();
+            const plate = vehPlateInput.value.trim();
+            const color = document.querySelector('input[name="vehColor"]:checked')?.value || 'indigo';
+
+            if (!name || !plate) {
+                showToast('차종과 차량번호를 모두 입력해주세요.', 'error');
+                return;
+            }
+
+            const existingId = editVehId.value;
+            if (existingId) {
+                const target = vehicles.find(v => v.id === existingId);
+                if (target) {
+                    target.name = name;
+                    target.plate = plate;
+                    target.color = color;
+                }
+            } else {
+                const newVeh = {
+                    id: 'veh_' + Date.now(),
+                    name: name,
+                    plate: plate,
+                    color: color,
+                    icon: 'fa-car',
+                    fuelLevel: 80
+                };
+                vehicles.push(newVeh);
+            }
+
+            localStorage.setItem(STORAGE_VEHICLES, JSON.stringify(vehicles));
+            resetVehicleForm();
+            renderVehicleCards();
+            renderVehicleManageList();
+            showToast('차량 정보가 저장되었습니다.');
+        }
+
+        function renderTodayReservations() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayList = reservations.filter(r => r.date === todayStr);
+
+            if (todayList.length === 0) {
+                todayReservationsContainer.innerHTML = `
+                    <div class="bg-white/60 border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center text-slate-400 text-xs font-medium">
+                        오늘 예약이 없습니다
+                    </div>
+                `;
+                return;
+            }
+
+            todayReservationsContainer.innerHTML = todayList.map(res => `
+                <div onclick="quickStartDriveFromReservation('${res.vehicle}', '${res.id}')" 
+                     class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md">${res.vehicle}</span>
+                            <span class="text-xs font-bold text-slate-800">${res.applicant || '신청자 미입력'}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">
+                            ${res.startTime} ~ ${res.endTime}
+                        </p>
+                    </div>
+                    <span class="text-xs text-indigo-600 font-bold bg-indigo-50 px-2.5 py-1 rounded-xl">
+                        운행시작 <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        window.quickStartDriveFromReservation = function(vehName, resId = null) {
+            const found = vehicles.find(v => v.name === vehName) || vehicles[0];
+            if (found) selectedVehicle = found;
+            showDrivingFormView(null, resId);
+        };
+
+        function submitReservation() {
+            const veh = resVehicleSelect.value;
+            const date = resDateInput.value;
+            const applicant = resApplicantInput.value.trim() || currentDriver;
+            const startTime = resStartTime.value;
+            const endTime = resEndTime.value;
+
+            if (!date) {
+                showToast('예약 날짜를 선택해주세요.', 'error');
+                return;
+            }
+
+            const newRes = {
+                id: 'res_' + Date.now(),
+                vehicle: veh,
+                date: date,
+                applicant: applicant,
+                startTime: startTime,
+                endTime: endTime
+            };
+
+            reservations.push(newRes);
+            localStorage.setItem(STORAGE_RESERVATIONS, JSON.stringify(reservations));
+
+            renderTodayReservations();
+            renderReservationList();
+            reservationModal.classList.add('hidden');
+            showToast('예약이 등록되었습니다.');
+        }
+
+        function renderReservationList() {
+            if (!resListContainer) return;
+            if (reservations.length === 0) {
+                resListContainer.innerHTML = `<div class="text-center text-xs text-slate-400 py-6">등록된 예약 내역이 없습니다.</div>`;
+                return;
+            }
+
+            const sorted = [...reservations].sort((a, b) => a.date.localeCompare(b.date));
+
+            resListContainer.innerHTML = sorted.map(r => `
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs flex justify-between items-center">
+                    <div>
+                        <div class="flex items-center space-x-1.5 font-bold text-slate-800 mb-0.5">
+                            <span class="text-indigo-600">[${r.vehicle}]</span>
+                            <span>${r.date} (${r.startTime}~${r.endTime})</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500">신청자: ${r.applicant}</span>
+                    </div>
+                    <button onclick="deleteReservation('${r.id}')" class="text-xs text-red-500 font-bold hover:underline px-2 py-1">삭제</button>
+                </div>
+            `).join('');
+        }
+
+        window.deleteReservation = function(id) {
+            reservations = reservations.filter(r => r.id !== id);
+            localStorage.setItem(STORAGE_RESERVATIONS, JSON.stringify(reservations));
+            if (window.deleteCloudReservation) {
+                window.deleteCloudReservation(id);
+            }
+            renderReservationList();
+            renderTodayReservations();
+            showToast('예약이 삭제되었습니다.');
+        };
+
+        function renderLogsList() {
+            if (!logsListContainer) return;
+            if (driveLogs.length === 0) {
+                logsListContainer.innerHTML = `<div class="text-center text-xs text-slate-400 py-8">등록된 운행 기록이 없습니다.</div>`;
+                return;
+            }
+
+            logsListContainer.innerHTML = driveLogs.map(log => `
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5 text-xs">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="font-bold text-slate-800 text-sm">${log.destination}</span>
+                            <span class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[10px] font-semibold">${log.purpose}</span>
+                        </div>
+                        <button onclick="deleteLog('${log.id}')" class="text-[10px] text-red-500 hover:underline">삭제</button>
+                    </div>
+                    <div class="grid grid-cols-2 text-[11px] text-slate-600 gap-1">
+                        <div>차량: <strong>${log.vehicle}</strong> (${log.driver})</div>
+                        <div>일시: ${log.departDate} ${log.departTime} ~ ${log.arrivalTime}</div>
+                        <div>거리: <strong class="text-indigo-600">${log.distance} km</strong> (${log.startOdometer} → ${log.endOdometer})</div>
+                        <div>정비/주유: ${log.maintenance || '-'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.deleteLog = function(id) {
+            if (!confirm('이 운행 기록을 삭제하시겠습니까?')) return;
+            driveLogs = driveLogs.filter(l => String(l.id) !== String(id));
+            localStorage.setItem(STORAGE_LOGS, JSON.stringify(driveLogs));
+            renderLogsList();
+            if (monthlyReportModal && !monthlyReportModal.classList.contains('hidden')) {
+                renderMonthlyReport();
+            }
+            showToast('운행 기록이 삭제되었습니다.');
+        };
+
+        function exportToCSV() {
+            if (driveLogs.length === 0) {
+                showToast('다운로드할 운행 이력이 없습니다.', 'error');
+                return;
+            }
+
+            const headers = ["저장일시", "운전자명", "차량명", "출발일자", "출발시간", "도착시간", "도착지", "운행목적", "동승인원", "출발계기판(km)", "도착계기판(km)", "운행거리(km)", "정비/주유기록"];
+            const rows = driveLogs.map(l => [
+                `"${l.timestamp}"`, `"${l.driver}"`, `"${l.vehicle}"`, `"${l.departDate}"`, `"${l.departTime}"`, `"${l.arrivalTime}"`,
+                `"${l.destination}"`, `"${l.purpose}"`, `"${l.passengers}"`, l.startOdometer, l.endOdometer, l.distance, `"${l.maintenance}"`
+            ]);
+
+            const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${orgName}_차량운행일지_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('엑셀 CSV 파일이 다운로드 되었습니다.');
+        }
+
+        function renderMonthlyReport() {
+            if (!reportMonthSelect.value) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                reportMonthSelect.value = `${year}-${month}`;
+            }
+
+            const targetMonth = reportMonthSelect.value;
+            const targetVehicle = reportVehicleSelect.value;
+
+            printOrgName.textContent = orgName;
+            const [y, m] = targetMonth.split('-');
+            printReportTitle.textContent = `${y}년 ${parseInt(m, 10)}월 차량 운행일지`;
+
+            const filteredLogs = driveLogs.filter(log => {
+                const logDate = log.departDate || '';
+                const matchMonth = logDate.startsWith(targetMonth);
+                const matchVehicle = (targetVehicle === 'ALL') || (log.vehicle === targetVehicle);
+                return matchMonth && matchVehicle;
+            });
+
+            let totalKm = 0;
+            let totalCost = 0;
+
+            filteredLogs.forEach(l => {
+                totalKm += (parseInt(l.distance, 10) || 0);
+                if (l.maintenance && l.maintenance !== '-') {
+                    const costMatch = l.maintenance.match(/([\d,]+)원/);
+                    if (costMatch) {
+                        totalCost += parseInt(costMatch[1].replace(/,/g, ''), 10) || 0;
+                    }
+                }
+            });
+
+            reportTotalDist.textContent = `${totalKm.toLocaleString()} km`;
+            reportTotalTrips.textContent = `${filteredLogs.length} 회`;
+            reportTotalCost.textContent = `${totalCost.toLocaleString()} 원`;
+
+            if (filteredLogs.length === 0) {
+                printableTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="p-4 text-center text-slate-400">선택한 월에 등록된 운행 기록이 없습니다.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            printableTableBody.innerHTML = filteredLogs.map(l => `
+                <tr class="border-b border-slate-300">
+                    <td class="border border-slate-300 p-1.5">${l.departDate ? l.departDate.substring(5) : '-'}</td>
+                    <td class="border border-slate-300 p-1.5 font-bold">${l.vehicle}</td>
+                    <td class="border border-slate-300 p-1.5">${l.driver}</td>
+                    <td class="border border-slate-300 p-1.5 font-medium text-left px-2">${l.destination} (${l.purpose})</td>
+                    <td class="border border-slate-300 p-1.5">${l.departTime}</td>
+                    <td class="border border-slate-300 p-1.5">${l.arrivalTime}</td>
+                    <td class="border border-slate-300 p-1.5">${(l.startOdometer || 0).toLocaleString()}</td>
+                    <td class="border border-slate-300 p-1.5">${(l.endOdometer || 0).toLocaleString()}</td>
+                    <td class="border border-slate-300 p-1.5 font-bold text-indigo-700">${(l.distance || 0).toLocaleString()}</td>
+                    <td class="border border-slate-300 p-1.5 text-xs">${l.maintenance || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function syncLogToGoogleSheets(logRecord) {
+            if (!webhookUrl) return;
+            try {
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(logRecord)
+                });
+                logRecord.synced = true;
+                localStorage.setItem(STORAGE_LOGS, JSON.stringify(driveLogs));
+            } catch (e) {
+                console.error('Google Sheets sync error:', e);
+            }
+        }
+
+        function attachEvents() {
+            backToHomeBtn.addEventListener('click', showHomeView);
+
+            if (fuelGaugeSlider) {
+                fuelGaugeSlider.addEventListener('input', (e) => {
+                    updateFuelGaugeUI(e.target.value);
+                });
+            }
+
+            if (useLastOdometerBtn) {
+                useLastOdometerBtn.addEventListener('click', () => {
+                    const lastKm = getLastOdometerForVehicle(selectedVehicle.name);
+                    if (lastKm > 0) startOdometer.value = lastKm;
+                });
+            }
+
+            if (startDriveBtn) startDriveBtn.addEventListener('click', handleStartDrive);
+            if (saveDriveBtn) saveDriveBtn.addEventListener('click', handleSaveDrive);
+
+            if (cancelDriveBtn) {
+                cancelDriveBtn.addEventListener('click', () => {
+                    activeDrive = null;
+                    localStorage.removeItem(STORAGE_ACTIVE_DRIVE);
+                    resetArrivalForm();
+                    renderDrivingState();
+                    showToast('출발 기록이 취소되었습니다.');
+                });
+            }
+
+            if (endOdometer) endOdometer.addEventListener('input', calculateTripDistance);
+
+            if (toggleMaintBtn) {
+                toggleMaintBtn.addEventListener('click', () => {
+                    maintFormGroup.classList.toggle('hidden');
+                    maintChevron.classList.toggle('rotate-180');
+                });
+            }
+
+            // Driver Modal
+            openDriverModalBtn.addEventListener('click', () => {
+                driverModalInput.value = currentDriver;
+                const quicks = ['김유진', '이철수', '박지민', '최수현'];
+                quickDriverChips.innerHTML = quicks.map(name => `
+                    <button type="button" onclick="setDriverName('${name}')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg">${name}</button>
+                `).join('');
+                driverModal.classList.remove('hidden');
+            });
+
+            saveDriverModalBtn.addEventListener('click', () => {
+                const name = driverModalInput.value.trim();
+                if (name) {
+                    currentDriver = name;
+                    localStorage.setItem(STORAGE_DRIVER, currentDriver);
+                    currentDriverDisplay.textContent = currentDriver;
+                    driverModal.classList.add('hidden');
+                    showToast('운자가 설정되었습니다.');
+                }
+            });
+
+            // Vehicle Modal
+            manageVehiclesBtn.addEventListener('click', () => {
+                resetVehicleForm();
+                renderVehicleManageList();
+                vehicleManageModal.classList.remove('hidden');
+            });
+            closeVehicleModalBtn.addEventListener('click', () => vehicleManageModal.classList.add('hidden'));
+            saveVehicleBtn.addEventListener('click', saveVehicle);
+            resetVehFormBtn.addEventListener('click', resetVehicleForm);
+
+            // Reservation Modal
+            const openResModalHandler = (tab = 'new') => {
+                resDateInput.value = new Date().toISOString().split('T')[0];
+                resApplicantInput.value = currentDriver;
+                renderReservationList();
+                if (tab === 'list') {
+                    resTabList.click();
+                } else {
+                    resTabNew.click();
+                }
+                reservationModal.classList.remove('hidden');
+            };
+            openReservationModalBtn.addEventListener('click', () => openResModalHandler('new'));
+            addTodayResQuickBtn.addEventListener('click', () => openResModalHandler('new'));
+            if (viewReservationsQuickBtn) {
+                viewReservationsQuickBtn.addEventListener('click', () => openResModalHandler('list'));
+            }
+            closeReservationModalBtn.addEventListener('click', () => reservationModal.classList.add('hidden'));
+
+            resTabNew.addEventListener('click', () => {
+                resTabNew.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-indigo-700 shadow-sm transition-all";
+                resTabList.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition-all";
+                resNewForm.classList.remove('hidden');
+                resListContainer.classList.add('hidden');
+            });
+
+            resTabList.addEventListener('click', () => {
+                resTabList.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white text-indigo-700 shadow-sm transition-all";
+                resTabNew.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition-all";
+                resListContainer.classList.remove('hidden');
+                resNewForm.classList.add('hidden');
+                renderReservationList();
+            });
+
+            submitReservationBtn.addEventListener('click', submitReservation);
+
+            if (openMonthlyReportBtn) {
+                openMonthlyReportBtn.addEventListener('click', () => {
+                    renderMonthlyReport();
+                    monthlyReportModal.classList.remove('hidden');
+                });
+            }
+
+            if (closeMonthlyReportBtn) {
+                closeMonthlyReportBtn.addEventListener('click', () => {
+                    monthlyReportModal.classList.add('hidden');
+                });
+            }
+
+            if (reportMonthSelect) reportMonthSelect.addEventListener('change', renderMonthlyReport);
+            if (reportVehicleSelect) reportVehicleSelect.addEventListener('change', renderMonthlyReport);
+
+            if (printReportBtn) {
+                printReportBtn.addEventListener('click', () => {
+                    window.print();
+                });
+            }
+
+            // Logs Modal
+            openLogsModalBtn.addEventListener('click', () => {
+                renderLogsList();
+                logsModal.classList.remove('hidden');
+            });
+            closeLogsModalBtn.addEventListener('click', () => logsModal.classList.add('hidden'));
+            exportCsvBtn.addEventListener('click', exportToCSV);
+
+            // Settings Modal
+            openSettingsBtn.addEventListener('click', () => {
+                orgNameInput.value = orgName;
+                webhookUrlInput.value = webhookUrl;
+                settingsModal.classList.remove('hidden');
+            });
+            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+            saveSettingsBtn.addEventListener('click', () => {
+                orgName = orgNameInput.value.trim() || '강원도농아인협회';
+                webhookUrl = webhookUrlInput.value.trim();
+
+                localStorage.setItem(STORAGE_ORG_NAME, orgName);
+                localStorage.setItem(STORAGE_WEBHOOK, webhookUrl);
+
+                orgNameHeader.textContent = orgName;
+                orgNameFooter.textContent = orgName;
+
+                updateSyncStatus();
+                settingsModal.classList.add('hidden');
+                showToast('설정이 저장되었습니다.');
+            });
+
+            clearLocalDataBtn.addEventListener('click', () => {
+                if (confirm('모든 운행 기록 및 예약 데이터를 초기화하시겠습니까?')) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            });
+        }
+
+        let toastTimer;
+        function showToast(message, type = 'success') {
+            toastMsg.textContent = message;
+            toastIcon.className = type === 'error' ? "fa-solid fa-circle-exclamation text-red-400" : "fa-solid fa-circle-check text-emerald-400";
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 3000);
+        }
+
+        // INITIALIZE APP ON LOAD
+        document.addEventListener('DOMContentLoaded', () => {
+            orgNameHeader.textContent = orgName;
+            orgNameFooter.textContent = orgName;
+            currentDriverDisplay.textContent = currentDriver;
+
+            const now = new Date();
+            const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            todayDateDisplay.textContent = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
+
+            renderVehicleCards();
+            renderTodayReservations();
+            updateSyncStatus();
+            attachEvents();
+        });
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kadd-drive-log';
+        let firebaseConfig = null;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        } catch (e) {
+            console.warn("Firebase config parse error", e);
+        }
+
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            window.deleteCloudReservation = async function(resId) {
+                if (!db || !appId || !resId) return;
+                try {
+                    const resDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'reservations', resId);
+                    await deleteDoc(resDocRef);
+                } catch(e) {
+                    console.warn("Cloud reservation delete error:", e);
+                }
+            };
+
+            async function initCloudSync() {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (err) {
+                    console.warn("Auth initialization failed, continuing in offline mode:", err);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (!user) return;
+
+                    const logsCol = collection(db, 'artifacts', appId, 'public', 'data', 'driveLogs');
+                    const resCol = collection(db, 'artifacts', appId, 'public', 'data', 'reservations');
+
+                    onSnapshot(logsCol, (snapshot) => {
+                        const cloudLogs = [];
+                        snapshot.forEach(docSnap => cloudLogs.push(docSnap.data()));
+                        if (cloudLogs.length > 0) {
+                            cloudLogs.sort((a, b) => (b.id || 0) - (a.id || 0));
+                            window.driveLogs = cloudLogs;
+                            localStorage.setItem('kadd_drive_logs', JSON.stringify(cloudLogs));
+                        }
+                    }, (err) => console.log("Drive logs cloud sync notice:", err));
+
+                    onSnapshot(resCol, (snapshot) => {
+                        const cloudRes = [];
+                        snapshot.forEach(docSnap => cloudRes.push(docSnap.data()));
+                        if (cloudRes.length > 0) {
+                            window.reservations = cloudRes;
+                            localStorage.setItem('kadd_reservations', JSON.stringify(cloudRes));
+                            if (typeof renderTodayReservations === 'function') renderTodayReservations();
+                        }
+                    }, (err) => console.log("Reservations cloud sync notice:", err));
+                });
+            }
+
+            initCloudSync();
+        }
+    </script>
+</body>
+</html>
