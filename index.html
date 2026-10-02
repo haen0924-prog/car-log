@@ -64,8 +64,8 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 <div class="toast" id="toast"></div>
 
 <script>
-/* ===== 설정 (여기만 수정하세요) ===== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxU_okOZibMmphHoGBwoLvPQVPYDzpt9xVnK-YK-bARUFV9wE3kMRlz5gWIdHc_VTz_/exec";
+/* ===== 기관 연결: 앱 첫 화면에서 GAS 주소를 입력합니다 (코드 수정 불필요) ===== */
+let GAS_URL = "";
 // 차량·운전자 목록은 구글시트의 "차량", "운전자" 탭에서 불러옵니다 (코드 수정 불필요)
 const PALETTE = [{c:"#3b5bdb",bg:"#eaeefd"},{c:"#3d8361",bg:"#e8f3ee"},{c:"#b5622e",bg:"#faeee4"},{c:"#7239d8",bg:"#f1edff"},{c:"#d6336c",bg:"#fdeaf1"},{c:"#0c8599",bg:"#e3f6f9"}];
 let DRIVERS = [], CARS = [];
@@ -82,7 +82,7 @@ const info = n => CARS.find(c=>c.n===n);
 let driver = ls.get("driver",null), car=null, view="home", pre=null, resv=null, purpose="업무", rPurpose="업무", fuelOn=false, fixOn=false, gauge="";
 let fuelMap = ls.get("fuelMap",{}), odoMap = ls.get("odoMap",{});
 { const c=ls.get("cfg",null);
-  applyCfg(c?c.cars:[{n:"카니발",p:"26더 2348"},{n:"아반떼",p:"176나 2958"},{n:"레이",p:"247서 7430"}], c?c.drivers:[]); }
+  applyCfg(c?c.cars:[], c?c.drivers:[]); }
 let cfgReady = !!ls.get("cfg",null), cfgFail = false;
 function lvl12(g){ const m=(g||"").match(/^(\d+)\/12/); if(m) return Math.min(12,+m[1]); return ({"가득":12,"3/4":9,"1/2":6,"1/4":3,"거의 없음":1})[g]||0; }
 function fuelSvg(n){
@@ -98,6 +98,7 @@ function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
 
 async function loadResv(){
+  if(!GAS_URL) return;
   try{
     const r = await fetch(GAS_URL+"?action=list"); const j = await r.json();
     resv = j.ok ? j.list : [];
@@ -109,11 +110,14 @@ async function loadResv(){
       if(driver && !DRIVERS.includes(driver)){ driver=null; localStorage.removeItem("driver"); car=null; view="home"; }
     }
   }catch(e){ resv = []; cfgFail=true; }
+  if(view==="connect") return;
   if(!driver) pickDriver(); else if(view==="home" && !car) home();
   if(view==="reserve") reserveView();
 }
 
 function render(){
+  if(!GAS_URL) return connectView();
+  if(view==="connect") return connectView();
   if(!driver) return pickDriver();
   if(view==="reserve") return reserveView();
   if(!car) return home();
@@ -125,7 +129,7 @@ function goHome(){ car=null; view="home"; pre=null; render(); }
 function pickDriver(){
   $("#app").innerHTML = `<div class="head"><h1>차량<span>운행</span>일지</h1></div>
   <div class="card"><b style="font-size:17px">운전자를 선택하세요</b><p class="lbl" style="margin-top:6px">한 번 선택하면 이 기기에 저장됩니다.</p>
-  ${driverBox()}</div>`;
+  ${driverBox()}</div>${FOOT}`;
 }
 function driverBox(){
   if(DRIVERS.length) return `<div class="opts" style="flex-wrap:wrap;margin-top:12px">${DRIVERS.map(n=>`<button style="flex:1 1 45%" onclick="setDriver('${n}')">👤 ${n}</button>`).join("")}</div>`;
@@ -151,11 +155,51 @@ function home(){
   <div class="card guide"><b>오늘 예약이 있다면 <span class="p">카드를 탭</span>해주세요</b><p>예약이 없거나 직접 기록할 경우<br><span class="bl"><b style="font-size:14px">아래 차량 버튼</b></span>을 탭하면 바로 이동합니다</p></div>
   <div class="sec">오늘 예약</div>${list}
   <div class="sec">차량 선택</div>
-  <div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
+  ${CARS.length||!cfgReady?"":`<div class="empty">시트의 "차량" 탭에 차량을 등록해 주세요.</div>`}<div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
     <div class="ic" style="background:${c.bg}">${svgCar(c.c)}</div><div class="pl" style="color:${c.c}">${c.p}</div><div class="nm">${c.n}</div>
-    <div class="fz">${fuelSvg(c.n)}</div><div class="st">${t[c.n]?'운행 중':''}</div></button>`).join("")}</div>`;
+    <div class="fz">${fuelSvg(c.n)}</div><div class="st">${t[c.n]?'운행 중':''}</div></button>`).join("")}</div>
+  ${FOOT}`;
 }
-function pickCar(v){ car=v; view="trip"; render(); loadResv(); }
+function pickCar(v){ car=v; view="trip"; /* ---------- 기관 연결 ---------- */
+const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button></div>`;
+function clearCaches(){
+  Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","odoMap","driver","trips"].includes(k)||k.startsWith("last_")) localStorage.removeItem(k); });
+  driver=null; car=null; resv=null; fuelMap={}; odoMap={}; applyCfg([],[]); cfgReady=false; cfgFail=false;
+}
+function setGas(u){ if(u!==ls.get("gas","")) clearCaches(); ls.set("gas",u); GAS_URL=u; }
+function openConnect(){ view="connect"; render(); }
+function shareLink(){ return location.href.split("?")[0].split("#")[0]+"?gas="+encodeURIComponent(GAS_URL); }
+function connectView(){
+  const has=!!GAS_URL;
+  $("#app").innerHTML = `${has?'<button class="back" onclick="goHome()">← 돌아가기</button>':''}
+  <div class="head"><h1>기관<span>연결</span></h1></div>
+  <div class="card"><b style="font-size:17px">구글시트 연결 주소 입력</b>
+  <p class="lbl" style="margin-top:6px;line-height:1.6">기관별로 만든 Apps Script 웹 앱 URL을 한 번만 입력하면 이 기기에 저장됩니다.</p>
+  <input type="text" id="gasIn" placeholder="https://script.google.com/macros/s/.../exec" value="${GAS_URL}" style="margin-top:12px;font-size:14px">
+  <div class="err" id="err"></div><button class="main" id="gasBtn" onclick="connect()">연결하기</button></div>
+  ${has?`<div class="card"><b style="font-size:17px">직원용 접속 링크</b>
+  <p class="lbl" style="margin-top:6px;line-height:1.6">이 링크로 접속하면 주소 입력 없이 바로 연결됩니다. 직원들에게 공유하세요.</p>
+  <button class="main pu" onclick="copyLink()">🔗 링크 복사</button></div>`:''}`;
+}
+async function connect(){
+  const u=$("#gasIn").value.trim(), err=$("#err"), btn=$("#gasBtn");
+  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) return err.textContent="주소가 올바르지 않습니다. https://script.google.com/.../exec 형태여야 합니다.";
+  err.textContent=""; btn.disabled=true; btn.textContent="연결 확인 중...";
+  try{
+    const j=await (await fetch(u+"?action=list")).json();
+    if(!j.ok) throw new Error("x");
+    setGas(u); view="home"; car=null; render(); loadResv();
+  }catch(e){ err.textContent="연결에 실패했습니다. 웹 앱 배포(액세스: 모든 사용자)와 주소를 확인해 주세요."; btn.disabled=false; btn.textContent="연결하기"; }
+}
+async function copyLink(){
+  const l=shareLink();
+  try{ await navigator.clipboard.writeText(l); toast("링크가 복사되었습니다"); }catch(e){ prompt("아래 링크를 복사하세요",l); }
+}
+
+{ const q=new URLSearchParams(location.search).get("gas");
+  if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
+  else GAS_URL=ls.get("gas",""); }
+render(); loadResv(); }
 function useResv(id){
   const r=resv.find(x=>x.id===id); if(!r) return;
   pre={id:r.id, dest:r.dest, purpose:r.purpose}; pickCar(r.car);
