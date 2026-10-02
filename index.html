@@ -45,6 +45,16 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .opt{border-top:1.5px dashed #ddd;margin-top:18px;padding-top:2px}
 .err{color:#dc2626;font-size:13px;margin-top:8px;min-height:16px}
 .hide{display:none}
+.gz{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.gz button{height:46px;padding:0;background:#ebe8e2;border-radius:6px}
+.gz button.on{background:#2f9e5f}.gz button.ony{background:#f59e0b}.gz button.onr{background:#dc2626}
+.acc{border:1.5px solid #e7e4de;border-radius:14px;margin-top:12px;overflow:hidden}
+.acch{width:100%;display:flex;justify-content:space-between;align-items:center;padding:14px;background:#f8f7f4;font-weight:700;font-size:15px;border-radius:0}
+.acch small{color:#999;font-weight:400}.acch i{font-style:normal;transition:transform .25s}
+.acc.open .acch{background:#e9edff;color:#3b5bdb}.acc.open .acch i{transform:rotate(180deg)}
+.accb{max-height:0;padding:0 12px;overflow:hidden;transition:max-height .25s ease,padding .25s ease}
+.acc.open .accb{max-height:90px;padding:12px}
+.edit{background:#e9edff;color:#3b5bdb;padding:3px 10px;font-size:12px;font-weight:700;border-radius:8px;margin-left:8px}
 .x{background:#fee2e2;color:#b91c1c;padding:6px 10px;font-size:12px;font-weight:700;border-radius:10px}
 .toast{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:#2f9e5f;color:#fff;padding:18px 28px;border-radius:16px;font-size:18px;font-weight:800;display:none;z-index:9;box-shadow:0 6px 20px #0004}
 </style>
@@ -70,17 +80,17 @@ const tStr = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const trips = () => ls.get("trips",{});
 const info = n => CARS.find(c=>c.n===n);
 let driver = ls.get("driver",null), car=null, view="home", pre=null, resv=null, purpose="업무", rPurpose="업무", fuelOn=false, fixOn=false, gauge="";
-const GAUGES = ["가득","3/4","1/2","1/4","거의 없음"];
 let fuelMap = ls.get("fuelMap",{}), odoMap = ls.get("odoMap",{});
 { const c=ls.get("cfg",null);
   applyCfg(c?c.cars:[{n:"카니발",p:"26더 2348"},{n:"아반떼",p:"176나 2958"},{n:"레이",p:"247서 7430"}], c?c.drivers:[]); }
 let cfgReady = !!ls.get("cfg",null), cfgFail = false;
+function lvl12(g){ const m=(g||"").match(/^(\d+)\/12/); if(m) return Math.min(12,+m[1]); return ({"가득":12,"3/4":9,"1/2":6,"1/4":3,"거의 없음":1})[g]||0; }
 function fuelSvg(n){
-  const g=fuelMap[n], i=GAUGES.indexOf(g);
-  if(i<0) return `<span style="color:#bbb">주유량 기록 없음</span>`;
-  const lv=[1,.75,.5,.25,.08][i], col=lv>=.5?"#2f9e5f":lv>=.25?"#f59e0b":"#dc2626";
-  return `<svg width="70" height="30" viewBox="0 0 70 30"><rect x="1" y="3" width="68" height="12" rx="6" fill="#ebe8e2"/><rect x="1" y="3" width="${68*lv}" height="12" rx="6" fill="${col}"/>
-  <text x="2" y="28" font-size="9" fill="#aaa">E</text><text x="62" y="28" font-size="9" fill="#aaa">F</text></svg><div style="font-weight:700;color:${col}">⛽ ${g}</div>`;
+  const g=fuelMap[n], k=lvl12(g);
+  if(!k) return `<span style="color:#bbb">주유량 기록 없음</span>`;
+  const col=k>=6?"#2f9e5f":k>=3?"#f59e0b":"#dc2626";
+  let cells=""; for(let i=0;i<12;i++) cells+=`<rect x="${i*6}" y="2" width="5" height="22" rx="1.5" fill="${i<k?col:'#ebe8e2'}"/>`;
+  return `<svg width="72" height="36" viewBox="0 0 72 36">${cells}<text x="0" y="34" font-size="9" fill="#aaa">E</text><text x="65" y="34" font-size="9" fill="#aaa">F</text></svg>`;
 }
 
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
@@ -216,24 +226,36 @@ function arrive(){
   const tr=trips()[car], c=info(car); purpose=tr.purpose||"업무"; fuelOn=false; fixOn=false; gauge="";
   $("#app").innerHTML = `<button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 도착</h2>
-  <div class="info">운전자: <b>${tr.driver}</b><br>출발: <b>${tr.date} ${tr.time}</b><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
+  <div class="info">운전자: <b>${tr.driver}</b><br>출발: <b id="sTxt">${tr.date} ${tr.time}</b><button class="edit" onclick="editStart()">수정</button><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
+  <div id="sEdit" class="hide" style="margin-top:8px"><div class="lbl">출발 날짜·시간 수정</div>
+  <div class="two" style="margin-top:6px"><input type="date" id="sD" value="${tr.date}" oninput="updStart()"><input type="time" id="sT" value="${tr.time}" oninput="updStart()"></div></div>
   <label>도착지</label><input type="text" id="dest" placeholder="예: 춘천시청" value="${tr.dest||''}">
   <label>인원 (명)</label><input type="number" id="ppl" inputmode="numeric" min="1" value="1">
   <label>이용목적</label><div class="opts"><button id="p1" class="${purpose==='업무'?'on':''}" onclick="setP('업무')">업무</button><button id="p2" class="${purpose==='통역'?'on':''}" onclick="setP('통역')">통역</button></div>
   <label>도착 계기판 (km) <span class="lbl">— ${tr.odoS.toLocaleString()}보다 커야 함</span></label>
   <input type="number" id="odoE" inputmode="numeric" oninput="calc()"><div class="lbl" id="dist" style="margin-top:6px"></div>
+  <label>🕒 도착 날짜·시간</label>
+  <div class="two"><input type="date" id="eD" value="${dStr(new Date())}" oninput="this.dataset.t='1'"><input type="time" id="eT" value="${tStr(new Date())}" oninput="this.dataset.t='1'"></div>
+  <div class="lbl" style="margin-top:6px">수정하지 않으면 저장하는 시각이 자동 기록됩니다.</div>
   <label>⛽ 남은 주유량 <span class="lbl">(선택)</span></label>
-  <div class="opts">${GAUGES.map((g,i)=>`<button id="g${i}" style="padding:13px 2px;font-size:13px" onclick="setG(${i})">${g}</button>`).join("")}</div>
-  <div class="opt"><label>⛽ 주유 (선택)</label><div class="opts"><button id="f0" class="on" onclick="setF(false)">안 함</button><button id="f1" onclick="setF(true)">주유함</button></div>
-  <input type="text" id="fuel" class="hide" placeholder="예: 휘발유 40L / 60,000원" style="margin-top:8px">
-  <label>🔧 정비 (선택)</label><div class="opts"><button id="m0" class="on" onclick="setM(false)">안 함</button><button id="m1" onclick="setM(true)">정비함</button></div>
-  <input type="text" id="fix" class="hide" placeholder="예: 엔진오일 교환" style="margin-top:8px"></div>
+  <div class="gz">${Array.from({length:12},(_,i)=>`<button id="g${i}" onclick="setG(${i+1})"></button>`).join("")}</div><div class="lbl" id="gTxt" style="margin-top:6px">막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)</div>
+  <div class="opt">
+  <div class="acc"><button class="acch" id="fh" onclick="setF(!fuelOn)"><span>⛽ 주유 기록 <small>(선택)</small></span><i>▾</i></button>
+  <div class="accb"><input type="text" id="fuel" placeholder="예: 휘발유 40L / 60,000원"></div></div>
+  <div class="acc"><button class="acch" id="mh" onclick="setM(!fixOn)"><span>🔧 정비 기록 <small>(선택)</small></span><i>▾</i></button>
+  <div class="accb"><input type="text" id="fix" placeholder="예: 엔진오일 교환"></div></div></div>
   <div class="err" id="err"></div><button class="main g" id="saveBtn" onclick="save()">💾 저장</button></div>`;
 }
+function editStart(){ $("#sEdit").classList.toggle("hide"); }
+function updStart(){ $("#sTxt").textContent = $("#sD").value+" "+$("#sT").value; }
 function setP(p){ purpose=p; $("#p1").classList.toggle("on",p==="업무"); $("#p2").classList.toggle("on",p==="통역"); }
-function setG(i){ gauge = gauge===GAUGES[i] ? "" : GAUGES[i]; GAUGES.forEach((g,k)=>$("#g"+k).classList.toggle("on",gauge===g)); }
-function setF(b){ fuelOn=b; $("#f0").classList.toggle("on",!b); $("#f1").classList.toggle("on",b); $("#fuel").classList.toggle("hide",!b); }
-function setM(b){ fixOn=b; $("#m0").classList.toggle("on",!b); $("#m1").classList.toggle("on",b); $("#fix").classList.toggle("hide",!b); }
+function setG(k){
+  gauge = gauge===k+"/12칸" ? "" : k+"/12칸";
+  const kk = gauge?k:0, cls = k>=6?"on":k>=3?"ony":"onr";
+  for(let i=0;i<12;i++) $("#g"+i).className = i<kk?cls:"";
+}
+function setF(b){ fuelOn=b; $("#fh").parentElement.classList.toggle("open",b); if(b) setTimeout(()=>$("#fuel").focus(),280); }
+function setM(b){ fixOn=b; $("#mh").parentElement.classList.toggle("open",b); if(b) setTimeout(()=>$("#fix").focus(),280); }
 function calc(){ const tr=trips()[car], e=+$("#odoE").value; $("#dist").textContent = e>tr.odoS ? `운행거리: ${e-tr.odoS} km` : ""; }
 
 async function save(){
@@ -242,12 +264,18 @@ async function save(){
   if(!dest) return err.textContent="도착지를 입력해 주세요.";
   if(!ppl||ppl<1) return err.textContent="인원을 입력해 주세요.";
   if(!e||e<=tr.odoS) return err.textContent=`도착 계기판은 ${tr.odoS}보다 큰 숫자여야 합니다.`;
-  if(fuelOn&&!$("#fuel").value.trim()) return err.textContent="주유 내용을 입력하거나 '안 함'을 선택해 주세요.";
-  if(fixOn&&!$("#fix").value.trim()) return err.textContent="정비 내용을 입력하거나 '안 함'을 선택해 주세요.";
+  if(fuelOn&&!$("#fuel").value.trim()) return err.textContent="주유 내용을 입력하거나 주유 기록을 접어 주세요.";
+  if(fixOn&&!$("#fix").value.trim()) return err.textContent="정비 내용을 입력하거나 정비 기록을 접어 주세요.";
+  const sD=$("#sD").value, sT=$("#sT").value;
+  if(!sD||!sT) return err.textContent="출발 날짜와 시간을 입력해 주세요.";
+  let eD=$("#eD").value, eT=$("#eT").value;
+  if($("#eD").dataset.t!=="1" && $("#eT").dataset.t!=="1"){ const nw=new Date(); eD=dStr(nw); eT=tStr(nw); }
+  if(!eD||!eT) return err.textContent="도착 날짜와 시간을 입력해 주세요.";
+  if(eD+" "+eT <= sD+" "+sT) return err.textContent="도착 시간은 출발 시간보다 늦어야 합니다.";
   err.textContent=""; btn.disabled=true; btn.textContent="저장 중...";
   const n=new Date();
   const data={action:"log", savedAt:`${dStr(n)} ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`,
-    driver:tr.driver, car, dest, people:ppl, purpose, startDate:tr.date, startTime:tr.time, endTime:tStr(n),
+    driver:tr.driver, car, dest, people:ppl, purpose, startDate:sD, startTime:sT, endTime:eT,
     odoStart:tr.odoS, odoEnd:e, distance:e-tr.odoS, fuel:fuelOn?$("#fuel").value.trim():"", fix:fixOn?$("#fix").value.trim():"", gauge, resId:tr.resId||""};
   try{
     const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)})).json();
