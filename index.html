@@ -52,7 +52,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .big label{font-size:calc(28px * var(--k));margin:26px 0 10px}
 .big h2{font-size:calc(40px * var(--k))}
 .big .lbl{font-size:calc(22px * var(--k))}
-.big .info{font-size:calc(clamp(16px,4.9vw,28px) * var(--k));line-height:1.8}
+.big .info{font-size:calc(clamp(16px,4.9vw,28px) * var(--kinfo, 1));line-height:1.8}
 .big input{font-size:calc(30px * var(--k));padding:18px}
 .big .two input{font-size:calc(clamp(15px,4.3vw,22px) * var(--k));padding:12px 8px}
 .two>*{min-width:0}
@@ -60,7 +60,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .big .opts button{font-size:calc(30px * var(--k));padding:20px}
 .big .main{font-size:calc(30px * var(--k));padding:22px}
 .big .back{font-size:calc(24px * var(--k))}
-.big .edit{font-size:calc(clamp(14px,3.8vw,20px) * var(--k));padding:6px 12px}
+.big .edit{font-size:calc(clamp(14px,3.8vw,20px) * var(--kinfo, 1));padding:6px 12px}
 .big .err{font-size:calc(22px * var(--k))}
 .big .req{font-size:calc(20px * var(--k));color:#dc2626}
 .big .gz button{height:calc(64px * var(--k))}
@@ -141,7 +141,11 @@ const FONT_STEPS=[{k:0.7,g:14},{k:0.8,g:18},{k:1.2,g:24}];
 let fontStep = ls.get("fontStep",1);  // 기본은 중간
 // 선택한 배율을 화면 전체에 적용 (첫 화면 포함)
 function applyFont(){ document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].k); }
-function kv(){ return `--k:${FONT_STEPS[fontStep].k}`; }
+// 출발·도착 화면: 크게를 골라도 나머지 글씨는 중간 배율, 운전자·출발·출발계기판 줄(--kinfo)만 선택한 배율 유지
+function kv(){
+  const sel=FONT_STEPS[fontStep].k, rest = fontStep===2 ? FONT_STEPS[1].k : sel;
+  return `--k:${rest};--kinfo:${sel}`;
+}
 function setFont(i){ fontStep=i; ls.set("fontStep",i); applyFont(); if(view==="home" && !car) home(); }
 
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
