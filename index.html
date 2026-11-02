@@ -261,7 +261,7 @@ function depart(){
   <div style="color:#dc2626;font-size:12px;margin-top:6px">자동 입력된 숫자가 계기판과 다르면 직접 입력해 주세요.</div>
   <div class="lbl" style="margin-top:6px">출발 날짜·시간은 버튼을 누르면 자동 기록됩니다.</div>
   <div class="err" id="err"></div><button class="main" onclick="doDepart()">🚀 출발</button>
-  <div class="sec" style="margin:24px 0 0">직전 운행기록 (최근 3건)</div>
+  <div class="sec" style="margin:24px 0 0">직전 운행기록</div>
   <div id="recBox">${recentHtml(car)}</div></div>`;
 }
 function doDepart(){
@@ -342,7 +342,7 @@ async function save(){
     if(!j.ok) throw new Error(j.error||"fail");
     const t=trips(); delete t[car]; ls.set("trips",t);
     // 방금 저장한 기록을 기기 안의 최근 기록 맨 앞에 넣어 둡니다 (다음 출발 때 바로 반영)
-    recent[car]=[{md:sD.slice(5).replace("-","/"), st:tr.time, en:eT, driver:tr.driver, dest, odoS:String(tr.odoS), odoE:String(e)}, ...(recent[car]||[])].slice(0,3);
+    recent[car]=[{md:sD.slice(5).replace("-","/"), st:tr.time, en:eT, driver:tr.driver, dest, odoS:String(tr.odoS), odoE:String(e)}];
     ls.set("recent",recent);
     if(gauge){ fuelMap[car]=gauge; ls.set("fuelMap",fuelMap); }
     if(tr.resId && resv) resv=resv.filter(r=>r.id!==tr.resId);
