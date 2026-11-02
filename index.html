@@ -225,7 +225,7 @@ const fmtKm = s => s ? (+s).toLocaleString() : "-";
 function recentHtml(c){
   const l=recent[c]||[];
   if(!l.length) return `<div class="empty" style="padding:14px">${recentReady?"운행 기록이 없습니다":"기록을 불러오는 중..."}</div>`;
-  return l.map(r=>`<div class="info"><b>${esc(r.md)} ${esc(r.st)}~${esc(r.en)}</b> · ${esc(r.driver)}<br>${esc(r.dest)}<br>계기판 ${fmtKm(r.odoS)} → <b>${fmtKm(r.odoE)} km</b></div>`).join("");
+  return l.map(r=>`<div class="info"><b>${esc(r.md)} ${esc(r.st)}~${esc(r.en)}</b> · ${esc(r.driver)} · ${esc(r.dest)}<br>계기판 ${fmtKm(r.odoS)} → <b>${fmtKm(r.odoE)} km</b></div>`).join("");
 }
 // 기록이 새로 도착하면 기록 목록과 출발 계기판 기본값을 갱신
 function refreshRecent(){
@@ -238,11 +238,12 @@ function depart(){
   $("#app").innerHTML = `<button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 출발</h2><div class="lbl">${c.p} · 운전자 ${driver}</div>
   ${pre?`<div class="info">📅 예약: <b>${pre.dest}</b> (${pre.purpose})</div>`:''}
-  <div class="sec" style="margin:18px 0 0">직전 운행기록 (최근 3건)</div>
-  <div id="recBox">${recentHtml(car)}</div>
   <label>출발 계기판 (km)</label><input type="number" id="odoS" inputmode="numeric" placeholder="예: 52340" value="${last}" data-auto="1" oninput="this.dataset.auto=''">
+  <div style="color:#dc2626;font-size:12px;margin-top:6px">자동 입력된 숫자가 계기판과 다르면 직접 입력해 주세요.</div>
   <div class="lbl" style="margin-top:6px">출발 날짜·시간은 버튼을 누르면 자동 기록됩니다.</div>
-  <div class="err" id="err"></div><button class="main" onclick="doDepart()">🚀 출발</button></div>`;
+  <div class="err" id="err"></div><button class="main" onclick="doDepart()">🚀 출발</button>
+  <div class="sec" style="margin:24px 0 0">직전 운행기록 (최근 3건)</div>
+  <div id="recBox">${recentHtml(car)}</div></div>`;
 }
 function doDepart(){
   const o=+$("#odoS").value;
