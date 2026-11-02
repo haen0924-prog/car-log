@@ -110,6 +110,9 @@ const pad = n => String(n).padStart(2,"0");
 const dStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const tStr = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const trips = () => ls.get("trips",{});
+// 운행 중인 차량: 구글시트 기준(모든 기기 공유). 서버 응답이 없으면 이 기기 기록을 사용
+let active = ls.get("active",{});
+const tripOf = c => { const x = active[c] || trips()[c]; return x ? {...x, odoS:+x.odoS} : null; };
 const info = n => CARS.find(c=>c.n===n);
 let driver = ls.get("driver",null), car=null, view="home", pre=null, resv=null, purpose="업무", rPurpose="업무", fuelOn=false, fixOn=false, gauge="";
 let fuelMap = ls.get("fuelMap",{}), recent = ls.get("recent",{}), recentReady = false, people = 1;
@@ -157,6 +160,7 @@ async function loadResv(){
     resv = j.ok ? j.list : [];
     if(j.ok && j.fuel){ fuelMap=j.fuel; ls.set("fuelMap",fuelMap); }
     if(j.ok && j.recent){ recent=j.recent; ls.set("recent",recent); recentReady=true; }
+    if(j.ok && j.active){ active=j.active; ls.set("active",active); const t=trips(); Object.keys(t).forEach(k=>{ if(!active[k]) delete t[k]; }); ls.set("trips",t); }
     const rec=lastRec(car), o=$("#odoS");
     if(o && o.dataset.auto==="1" && rec) o.value=rec.odoE;
     if($("#recBox")) refreshRecent();
@@ -176,7 +180,7 @@ function render(){
   if(!driver) return pickDriver();
   if(view==="reserve") return reserveView();
   if(!car) return home();
-  trips()[car] ? arrive() : depart();
+  tripOf(car) ? arrive() : depart();
 }
 function goHome(){ car=null; view="home"; pre=null; render(); }
 
@@ -197,7 +201,7 @@ function changeDriver(){ driver=null; render(); }
 
 /* ---------- 메인 ---------- */
 function home(){
-  const now=new Date(), days=["일","월","화","수","목","금","토"], t=trips(), today=dStr(now);
+  const now=new Date(), days=["일","월","화","수","목","금","토"], today=dStr(now);
   const mine = (resv||[]).filter(r=>r.date===today);
   const list = resv===null ? `<div class="empty">불러오는 중...</div>`
     : mine.length ? mine.map(r=>`<button class="rcard" onclick="useResv('${r.id}')"><b>${r.start}~${r.end} · ${r.car}</b><small>${r.driver} · ${r.dest} · ${r.purpose}</small></button>`).join("")
@@ -213,7 +217,7 @@ function home(){
   <div class="sec">차량 선택</div>
   ${CARS.length||!cfgReady?"":`<div class="empty">시트의 "차량" 탭에 차량을 등록해 주세요.</div>`}<div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
     <div class="ic" style="background:${c.bg}">${svgCar(c.c)}</div><div class="pl" style="color:${c.c}">${c.p}</div><div class="nm">${c.n}</div>
-    <div class="fz">${fuelSvg(c.n)}</div><div class="st">${t[c.n]?'운행 중':''}</div></button>`).join("")}</div>
+    <div class="fz">${fuelSvg(c.n)}</div><div class="st">${tripOf(c.n)?'운행중 · '+esc(tripOf(c.n).driver):''}</div></button>`).join("")}</div>
   ${FOOT}`;
 }
 function pickCar(v){ car=v; view="trip"; render(); loadResv(); }
@@ -296,17 +300,24 @@ function depart(){
   <div class="sec" style="margin:24px 0 0">직전 운행기록</div>
   <div id="recBox">${recentHtml(car)}</div></div></div>`;
 }
-function doDepart(){
-  const o=+$("#odoS").value;
-  if(!o||o<=0) return $("#err").textContent="출발 계기판 숫자를 입력해 주세요.";
-  const n=new Date(), t=trips();
-  t[car]={driver, odoS:o, date:dStr(n), time:tStr(n), dest:pre?pre.dest:"", purpose:pre?pre.purpose:"업무", resId:pre?pre.id:""};
-  ls.set("trips",t); pre=null; render();
+async function doDepart(){
+  const err=$("#err"), o=+$("#odoS").value;
+  if(!o||o<=0) return err.textContent="출발 계기판 숫자를 입력해 주세요.";
+  const n=new Date();
+  const tr={driver, odoS:o, date:dStr(n), time:tStr(n), dest:pre?pre.dest:"", purpose:pre?pre.purpose:"업무", resId:pre?pre.id:""};
+  err.textContent=""; 
+  try{
+    const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"depart", car, driver:tr.driver, odoStart:o, date:tr.date, time:tr.time, dest:tr.dest, purpose:tr.purpose, resId:tr.resId})})).json();
+    if(!j.ok) return err.textContent=j.error||"출발 등록에 실패했습니다.";
+  }catch(x){ return err.textContent="출발 등록에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
+  const t=trips(); t[car]=tr; ls.set("trips",t);
+  active[car]=tr; ls.set("active",active);
+  pre=null; render(); loadResv();
 }
 
 /* ---------- 도착 ---------- */
 function arrive(){
-  const tr=trips()[car], c=info(car); purpose=tr.purpose||"업무"; gauge=""; people=1;
+  const tr=tripOf(car), c=info(car); purpose=tr.purpose||"업무"; gauge=""; people=1;
   $("#app").innerHTML = `<div class="big" style="${kv()}"><button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 도착</h2>
   <div class="info">운전자: <b>${tr.driver}</b><br><span style="white-space:nowrap">출발: <b id="sTxt">${tr.date} ${tr.time}</b> <button class="edit" onclick="editStart()">수정</button></span><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
@@ -353,10 +364,10 @@ function setG(k){
   const kk = gauge?k:0, cls = k>=6?"on":k>=3?"ony":"onr";
   for(let i=0;i<GAUGE_N;i++) $("#g"+i).className = i<kk?cls:"";
 }
-function calc(){ const tr=trips()[car], e=+$("#odoE").value; $("#dist").innerHTML = e>tr.odoS ? `<span style="font-size:calc(18px * var(--k));color:#999">운행거리</span><div style="font-size:calc(30px * var(--k));font-weight:800;color:#3b5bdb">${e-tr.odoS} km</div>` : ""; }
+function calc(){ const tr=tripOf(car), e=+$("#odoE").value; $("#dist").innerHTML = e>tr.odoS ? `<span style="font-size:calc(18px * var(--k));color:#999">운행거리</span><div style="font-size:calc(30px * var(--k));font-weight:800;color:#3b5bdb">${e-tr.odoS} km</div>` : ""; }
 
 async function save(){
-  const tr=trips()[car], err=$("#err"), btn=$("#saveBtn");
+  const tr=tripOf(car), err=$("#err"), btn=$("#saveBtn");
   const dest=$("#dest").value.trim(), ppl=people, e=+$("#odoE").value;
   if(!dest) return err.textContent="행선지를 입력해 주세요.";
   if(!ppl||ppl<1) return err.textContent="탑승인원을 입력해 주세요.";
@@ -375,7 +386,7 @@ async function save(){
   try{
     const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)})).json();
     if(!j.ok) throw new Error(j.error||"fail");
-    const t=trips(); delete t[car]; ls.set("trips",t);
+    const t=trips(); delete t[car]; ls.set("trips",t); delete active[car]; ls.set("active",active);
     // 방금 저장한 기록을 기기 안의 최근 기록 맨 앞에 넣어 둡니다 (다음 출발 때 바로 반영)
     recent[car]=[{md:sD.slice(5).replace("-","/"), st:tr.time, en:eT, driver:tr.driver, dest, odoS:String(tr.odoS), odoE:String(e)}];
     ls.set("recent",recent);
@@ -388,8 +399,8 @@ async function save(){
 /* ---------- 기관 연결 ---------- */
 const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button></div>`;
 function clearCaches(){
-  Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","recent","driver","trips"].includes(k)) localStorage.removeItem(k); });
-  driver=null; car=null; resv=null; fuelMap={}; recent={}; recentReady=false; applyCfg([],[]); cfgReady=false; cfgFail=false;
+  Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","recent","driver","trips","active"].includes(k)) localStorage.removeItem(k); });
+  driver=null; car=null; resv=null; fuelMap={}; recent={}; active={}; recentReady=false; applyCfg([],[]); cfgReady=false; cfgFail=false;
 }
 function setGas(u){ if(u!==ls.get("gas","")) clearCaches(); ls.set("gas",u); GAS_URL=u; }
 function openConnect(){ view="connect"; render(); }
