@@ -30,8 +30,6 @@ h1{font-size:calc(28px * var(--k));font-weight:800;margin-top:18px}h1 span{color
 .car .pl{font-size:calc(12px * var(--k));font-weight:700}.car .nm{font-size:calc(17px * var(--k));font-weight:800;margin-top:6px}
 .fz{margin-top:8px;font-size:calc(11px * var(--k));line-height:1.3}
 .car .st{font-size:calc(11px * var(--k));color:#c2410c;font-weight:700;margin-top:3px;min-height:14px}
-.rcard{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid #d9d0fa;border-radius:18px;padding:14px 16px;margin-bottom:10px}
-.rcard b{font-size:calc(16px * var(--k))}.rcard small{display:block;color:#777;margin-top:4px;font-size:calc(13px * var(--k))}
 .back{background:none;color:#3b5bdb;font-weight:700;padding:4px 0;font-size:calc(14px * var(--k))}
 h2{font-size:calc(20px * var(--k));font-weight:800;margin:6px 0 4px}
 label{display:block;font-weight:700;font-size:calc(14px * var(--k));margin:16px 0 6px}
@@ -46,9 +44,6 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .opt{border-top:1.5px dashed #ddd;margin-top:18px;padding-top:2px}
 .err{color:#dc2626;font-size:calc(13px * var(--k));margin-top:8px;min-height:16px}
 .hide{display:none}
-.fontbar{display:flex;gap:6px;justify-content:flex-end;margin-top:4px}
-.fontbar button{padding:6px 10px;background:#fff;border:1.5px solid #e7e4de;font-weight:600;font-size:13px;color:#777}
-.fontbar button.on{background:#e9edff;border-color:#3b5bdb;color:#3b5bdb;font-weight:800}
 .big label{font-size:calc(24px * var(--k));margin:26px 0 10px}
 .big h2{font-size:calc(26.67px * var(--k))}
 .big .lbl{font-size:calc(18px * var(--k))}
@@ -114,7 +109,7 @@ const trips = () => ls.get("trips",{});
 let active = ls.get("active",{});
 const tripOf = c => { const x = active[c] || trips()[c]; return x ? {...x, odoS:+x.odoS} : null; };
 const info = n => CARS.find(c=>c.n===n);
-let driver = ls.get("driver",null), car=null, view="home", pre=null, resv=null, purpose="업무", rPurpose="업무", fuelOn=false, fixOn=false, gauge="";
+let driver = ls.get("driver",null), car=null, view="home", purpose="업무", fuelOn=false, fixOn=false, gauge="";
 let fuelMap = ls.get("fuelMap",{}), recent = ls.get("recent",{}), recentReady = false, people = 1;
 const GAUGE_N = 10; // 연료 게이지 칸 수
 { const c=ls.get("cfg",null);
@@ -139,25 +134,12 @@ function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
-// k: 출발·도착 화면 배율, g: 첫 화면 버튼의 '가' 글자 크기 (작게 → 크게), 기기에 저장
-const FONT_STEPS=[{k:0.8,hk:1,g:18},{k:1.2,hk:1.2,g:24}];  // k: 출발·도착 배율, hk: 첫 화면 배율, g: 버튼 글자 크기; 0: 중간(기본), 1: 크게
-let fontStep = Math.min(1, ls.get("fontStep",0));
-// 선택한 배율을 화면 전체에 적용 (첫 화면 포함)
-function applyFont(){ document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].hk); }
-// 출발·도착 화면: 선택한 배율(중간 0.8배, 크게 1.2배)을 전체 글씨에 적용
-function kv(){
-  const sel=FONT_STEPS[fontStep].k;
-  return `--k:${sel};--kinfo:${sel}`;
-}
-function setFont(i){ fontStep=i; ls.set("fontStep",i); applyFont(); if(view==="home" && !car) home(); }
-
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
 
 async function loadResv(){
   if(!GAS_URL) return;
   try{
     const r = await fetch(GAS_URL+"?action=list"); const j = await r.json();
-    resv = j.ok ? j.list : [];
     if(j.ok && j.fuel){ fuelMap=j.fuel; ls.set("fuelMap",fuelMap); }
     if(j.ok && j.recent){ recent=j.recent; ls.set("recent",recent); recentReady=true; }
     if(j.ok && j.active){ active=j.active; ls.set("active",active); const t=trips(); Object.keys(t).forEach(k=>{ if(!active[k]) delete t[k]; }); ls.set("trips",t); }
@@ -168,21 +150,19 @@ async function loadResv(){
       applyCfg(j.cars,j.drivers); ls.set("cfg",{cars:j.cars,drivers:j.drivers}); cfgReady=true; cfgFail=false;
       if(driver && !DRIVERS.includes(driver)){ driver=null; localStorage.removeItem("driver"); car=null; view="home"; }
     }
-  }catch(e){ resv = []; cfgFail=true; }
+  }catch(e){ cfgFail=true; }
   if(view==="connect") return;
   if(!driver) pickDriver(); else if(view==="home" && !car) home();
-  if(view==="reserve") reserveView();
 }
 
 function render(){
   if(!GAS_URL) return connectView();
   if(view==="connect") return connectView();
   if(!driver) return pickDriver();
-  if(view==="reserve") return reserveView();
   if(!car) return home();
   tripOf(car) ? arrive() : depart();
 }
-function goHome(){ car=null; view="home"; pre=null; render(); }
+function goHome(){ car=null; view="home"; render(); }
 
 /* ---------- 운전자 ---------- */
 function pickDriver(){
@@ -202,18 +182,11 @@ function changeDriver(){ driver=null; render(); }
 /* ---------- 메인 ---------- */
 function home(){
   const now=new Date(), days=["일","월","화","수","목","금","토"], today=dStr(now);
-  const mine = (resv||[]).filter(r=>r.date===today);
-  const list = resv===null ? `<div class="empty">불러오는 중...</div>`
-    : mine.length ? mine.map(r=>`<button class="rcard" onclick="useResv('${r.id}')"><b>${r.start}~${r.end} · ${r.car}</b><small>${r.driver} · ${r.dest} · ${r.purpose}</small></button>`).join("")
-    : `<div class="empty">오늘 예약이 없습니다</div>`;
   $("#app").innerHTML = `
-  <div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" style="font-size:${s.g}px" aria-label="글씨 ${['중간','크게'][i]}" onclick="setFont(${i})">가</button>`).join("")}</div>
   <div class="head"><h1>차량<span>운행</span>일지</h1>
-    <div class="right"><button class="pill" onclick="changeDriver()">👤 ${driver}</button>
-    <div class="fabw"><button class="fab" onclick="openReserve()">📅</button>예약</div></div></div>
+    <div class="right"><button class="pill" onclick="changeDriver()">👤 ${driver}</button></div></div>
   <div class="card row"><div><div class="lbl">오늘</div><div class="date">${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)</div></div><div class="dot"></div></div>
-  <div class="card guide"><b>오늘 예약이 있다면 <span class="p">카드를 탭</span>해주세요</b><p>예약이 없거나 직접 기록할 경우<br><span class="bl"><b style="font-size:calc(14px * var(--k))">아래 차량 버튼</b></span>을 탭하면 바로 이동합니다</p></div>
-  <div class="sec">오늘 예약</div>${list}
+  <div class="card guide"><b>차량을 선택하세요</b><p>아래 차량 버튼을 탭하면 출발 또는 도착 기록을 시작합니다</p></div>
   <div class="sec">차량 선택</div>
   ${CARS.length||!cfgReady?"":`<div class="empty">시트의 "차량" 탭에 차량을 등록해 주세요.</div>`}<div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
     <div class="ic" style="background:${c.bg}">${svgCar(c.c)}</div><div class="pl" style="color:${c.c}">${c.p}</div><div class="nm">${c.n}</div>
@@ -221,52 +194,6 @@ function home(){
   ${FOOT}`;
 }
 function pickCar(v){ car=v; view="trip"; render(); loadResv(); }
-function useResv(id){
-  const r=resv.find(x=>x.id===id); if(!r) return;
-  pre={id:r.id, dest:r.dest, purpose:r.purpose}; pickCar(r.car);
-}
-
-/* ---------- 예약 ---------- */
-function openReserve(){ view="reserve"; rPurpose="업무"; reserveView(); loadResv(); }
-function reserveView(){
-  const today=dStr(new Date());
-  const keep = {d:$("#rDate")?.value||today, c:$("#rCar")?.value, s:$("#rS")?.value||"09:00", e:$("#rE")?.value||"18:00", t:$("#rDest")?.value||""};
-  const list = resv===null ? `<div class="empty">불러오는 중...</div>`
-    : resv.length ? resv.map(r=>`<div class="card row" style="padding:14px 16px;margin-bottom:10px"><div><b>${r.date.slice(5).replace("-","/")} ${r.start}~${r.end} · ${r.car}</b><div class="lbl" style="margin-top:4px">${r.driver} · ${r.dest} · ${r.purpose}</div></div>
-      ${r.driver===driver?`<button class="x" onclick="cancelResv('${r.id}')">취소</button>`:''}</div>`).join("")
-    : `<div class="empty">예정된 예약이 없습니다</div>`;
-  $("#app").innerHTML = `<button class="back" onclick="goHome()">← 처음으로</button>
-  <h2>차량 예약</h2><div class="lbl">예약자: ${driver}</div>
-  <div class="card" style="margin-top:12px">
-  <label style="margin-top:0">날짜</label><input type="date" id="rDate" min="${today}" value="${keep.d}">
-  <label>차량</label><select id="rCar">${CARS.map(c=>`<option ${c.n===keep.c?'selected':''}>${c.n}</option>`).join("")}</select>
-  <div class="two"><div><label>출발 시간</label><input type="time" id="rS" value="${keep.s}"></div><div><label>반납 시간</label><input type="time" id="rE" value="${keep.e}"></div></div>
-  <label>목적지</label><input type="text" id="rDest" placeholder="예: 춘천시청" value="${keep.t}">
-  <label>이용목적</label><div class="opts"><button id="rp1" class="${rPurpose==='업무'?'on':''}" onclick="setRP('업무')">업무</button><button id="rp2" class="${rPurpose==='통역'?'on':''}" onclick="setRP('통역')">통역</button></div>
-  <div class="err" id="err"></div><button class="main pu" id="rBtn" onclick="doReserve()">예약하기</button></div>
-  <div class="sec">예약 현황</div>${list}`;
-}
-function setRP(p){ rPurpose=p; $("#rp1").classList.toggle("on",p==="업무"); $("#rp2").classList.toggle("on",p==="통역"); }
-async function doReserve(){
-  const err=$("#err"), btn=$("#rBtn");
-  const d={action:"reserve", date:$("#rDate").value, car:$("#rCar").value, start:$("#rS").value, end:$("#rE").value, dest:$("#rDest").value.trim(), purpose:rPurpose, driver};
-  if(!d.date||!d.start||!d.end) return err.textContent="날짜와 시간을 입력해 주세요.";
-  if(d.end<=d.start) return err.textContent="반납 시간은 출발 시간보다 늦어야 합니다.";
-  if(!d.dest) return err.textContent="목적지를 입력해 주세요.";
-  const clash=(resv||[]).find(r=>r.car===d.car&&r.date===d.date&&d.start<r.end&&d.end>r.start);
-  if(clash) return err.textContent=`이미 예약됨: ${clash.start}~${clash.end} (${clash.driver})`;
-  err.textContent=""; btn.disabled=true; btn.textContent="예약 중...";
-  try{
-    const j = await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)})).json();
-    if(!j.ok) throw new Error(j.error);
-    toast("예약되었습니다"); $("#rDest").value=""; await loadResv();
-  }catch(x){ err.textContent=String(x.message||"예약에 실패했습니다.").slice(0,60); btn.disabled=false; btn.textContent="예약하기"; }
-}
-async function cancelResv(id){
-  if(!confirm("이 예약을 취소할까요?")) return;
-  try{ await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"cancel",id})}); toast("취소되었습니다"); loadResv(); }
-  catch(e){ alert("취소에 실패했습니다."); }
-}
 
 /* ---------- 출발 ---------- */
 const fmtKm = s => s ? (+s).toLocaleString() : "-";
@@ -290,9 +217,8 @@ function refreshRecent(){
 }
 function depart(){
   const rec=lastRec(car), last = rec ? rec.odoE : "", c=info(car);
-  $("#app").innerHTML = `<div class="big" style="${kv()}"><button class="back" onclick="goHome()">← 차량 선택</button>
+  $("#app").innerHTML = `<div class="big"><button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 출발</h2><div class="lbl">${c.p} · 운전자 ${driver}</div>
-  ${pre?`<div class="info">📅 예약: <b>${pre.dest}</b> (${pre.purpose})</div>`:''}
   <label>출발 계기판 (km)</label><input type="number" id="odoS" inputmode="numeric" placeholder="예: 52340" value="${last}" data-auto="1" oninput="this.dataset.auto=''">
   <div style="color:#dc2626;font-size:calc(18px * var(--k));margin-top:8px">자동 입력된 숫자가 계기판과 다르면 직접 입력해 주세요.</div>
   <div class="lbl" style="margin-top:6px">출발 날짜·시간은 버튼을 누르면 자동 기록됩니다.</div>
@@ -304,7 +230,7 @@ async function doDepart(){
   const err=$("#err"), o=+$("#odoS").value;
   if(!o||o<=0) return err.textContent="출발 계기판 숫자를 입력해 주세요.";
   const n=new Date();
-  const tr={driver, odoS:o, date:dStr(n), time:tStr(n), dest:pre?pre.dest:"", purpose:pre?pre.purpose:"업무", resId:pre?pre.id:""};
+  const tr={driver, odoS:o, date:dStr(n), time:tStr(n), dest:"", purpose:"업무", resId:""};
   err.textContent=""; 
   try{
     const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"depart", car, driver:tr.driver, odoStart:o, date:tr.date, time:tr.time, dest:tr.dest, purpose:tr.purpose, resId:tr.resId})})).json();
@@ -312,13 +238,13 @@ async function doDepart(){
   }catch(x){ return err.textContent="출발 등록에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
   const t=trips(); t[car]=tr; ls.set("trips",t);
   active[car]=tr; ls.set("active",active);
-  pre=null; render(); loadResv();
+  render(); loadResv();
 }
 
 /* ---------- 도착 ---------- */
 function arrive(){
   const tr=tripOf(car), c=info(car); purpose=tr.purpose||"업무"; gauge=""; people=1;
-  $("#app").innerHTML = `<div class="big" style="${kv()}"><button class="back" onclick="goHome()">← 차량 선택</button>
+  $("#app").innerHTML = `<div class="big"><button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 도착</h2>
   <div class="info">운전자: <b>${tr.driver}</b><br><span style="white-space:nowrap">출발: <b id="sTxt">${tr.date} ${tr.time}</b> <button class="edit" onclick="editStart()">수정</button></span><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
   <div id="sEdit" class="hide" style="margin-top:8px"><div class="lbl">출발 날짜·시간 수정</div>
@@ -391,7 +317,6 @@ async function save(){
     recent[car]=[{md:sD.slice(5).replace("-","/"), st:tr.time, en:eT, driver:tr.driver, dest, odoS:String(tr.odoS), odoE:String(e)}];
     ls.set("recent",recent);
     if(gauge){ fuelMap[car]=gauge; ls.set("fuelMap",fuelMap); }
-    if(tr.resId && resv) resv=resv.filter(r=>r.id!==tr.resId);
     toast("저장되었습니다"); setTimeout(goHome,1400);
   }catch(x){ err.textContent="저장에 실패했습니다. 인터넷 연결과 GAS 주소를 확인하고 다시 눌러 주세요."; btn.disabled=false; btn.textContent="💾 저장"; }
 }
@@ -400,7 +325,7 @@ async function save(){
 const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button></div>`;
 function clearCaches(){
   Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","recent","driver","trips","active"].includes(k)) localStorage.removeItem(k); });
-  driver=null; car=null; resv=null; fuelMap={}; recent={}; active={}; recentReady=false; applyCfg([],[]); cfgReady=false; cfgFail=false;
+  driver=null; car=null; fuelMap={}; recent={}; active={}; recentReady=false; applyCfg([],[]); cfgReady=false; cfgFail=false;
 }
 function setGas(u){ if(u!==ls.get("gas","")) clearCaches(); ls.set("gas",u); GAS_URL=u; }
 function openConnect(){ view="connect"; render(); }
@@ -435,7 +360,6 @@ async function copyLink(){
 { const q=new URLSearchParams(location.search).get("gas");
   if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
   else GAS_URL=ls.get("gas",""); }
-applyFont();
 render(); loadResv();
 </script>
 </body>
