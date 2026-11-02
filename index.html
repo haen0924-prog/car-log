@@ -141,10 +141,10 @@ const FONT_STEPS=[{k:0.8,hk:1,g:18},{k:1.2,hk:1.2,g:24}];  // k: 출발·도착 
 let fontStep = Math.min(1, ls.get("fontStep",0));
 // 선택한 배율을 화면 전체에 적용 (첫 화면 포함)
 function applyFont(){ document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].hk); }
-// 출발·도착 화면: 크게를 골라도 나머지 글씨는 중간 배율, 운전자·출발·출발계기판 줄(--kinfo)만 선택한 배율 유지
+// 출발·도착 화면: 선택한 배율(중간 0.8배, 크게 1.2배)을 전체 글씨에 적용
 function kv(){
-  const sel=FONT_STEPS[fontStep].k, rest = fontStep===1 ? FONT_STEPS[0].k : sel;
-  return `--k:${rest};--kinfo:${sel}`;
+  const sel=FONT_STEPS[fontStep].k;
+  return `--k:${sel};--kinfo:${sel}`;
 }
 function setFont(i){ fontStep=i; ls.set("fontStep",i); applyFont(); if(view==="home" && !car) home(); }
 
