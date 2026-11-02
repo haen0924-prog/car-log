@@ -45,6 +45,25 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .opt{border-top:1.5px dashed #ddd;margin-top:18px;padding-top:2px}
 .err{color:#dc2626;font-size:13px;margin-top:8px;min-height:16px}
 .hide{display:none}
+.big label{font-size:28px;margin:26px 0 10px}
+.big h2{font-size:40px}
+.big .lbl{font-size:22px}
+.big .info{font-size:30px;line-height:1.8}
+.big input{font-size:30px;padding:18px}
+.big .two input{font-size:24px;padding:14px}
+.big .opts button{font-size:30px;padding:20px}
+.big .main{font-size:30px;padding:22px}
+.big .back{font-size:24px}
+.big .edit{font-size:24px;padding:8px 18px}
+.big .err{font-size:22px}
+.big .req{font-size:20px;color:#dc2626}
+.big .gz button{height:64px}
+.big .acch{font-size:24px;padding:18px}
+.big .acc.open .accb{max-height:160px}
+.big #ppEtc{font-size:26px}
+.pp{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.pp button{height:76px;background:#fff;border:2px solid #e7e4de;font-size:30px;font-weight:800;color:#1f1f1f}
+.pp button.on{background:#e9edff;border-color:#3b5bdb;color:#3b5bdb}
 .gz{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
 .gz button{height:46px;padding:0;background:#ebe8e2;border-radius:6px}
 .gz button.on{background:#2f9e5f}.gz button.ony{background:#f59e0b}.gz button.onr{background:#dc2626}
@@ -80,7 +99,7 @@ const tStr = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const trips = () => ls.get("trips",{});
 const info = n => CARS.find(c=>c.n===n);
 let driver = ls.get("driver",null), car=null, view="home", pre=null, resv=null, purpose="업무", rPurpose="업무", fuelOn=false, fixOn=false, gauge="";
-let fuelMap = ls.get("fuelMap",{}), recent = ls.get("recent",{}), recentReady = false;
+let fuelMap = ls.get("fuelMap",{}), recent = ls.get("recent",{}), recentReady = false, people = 1;
 const GAUGE_N = 10; // 연료 게이지 칸 수
 { const c=ls.get("cfg",null);
   applyCfg(c?c.cars:[], c?c.drivers:[]); }
@@ -255,29 +274,42 @@ function doDepart(){
 
 /* ---------- 도착 ---------- */
 function arrive(){
-  const tr=trips()[car], c=info(car); purpose=tr.purpose||"업무"; fuelOn=false; fixOn=false; gauge="";
-  $("#app").innerHTML = `<button class="back" onclick="goHome()">← 차량 선택</button>
+  const tr=trips()[car], c=info(car); purpose=tr.purpose||"업무"; gauge=""; people=1;
+  $("#app").innerHTML = `<div class="big"><button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 도착</h2>
   <div class="info">운전자: <b>${tr.driver}</b><br>출발: <b id="sTxt">${tr.date} ${tr.time}</b><button class="edit" onclick="editStart()">수정</button><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
   <div id="sEdit" class="hide" style="margin-top:8px"><div class="lbl">출발 날짜·시간 수정</div>
   <div class="two" style="margin-top:6px"><input type="date" id="sD" value="${tr.date}" oninput="updStart()"><input type="time" id="sT" value="${tr.time}" oninput="updStart()"></div></div>
-  <label>도착지</label><input type="text" id="dest" placeholder="예: 춘천시청" value="${tr.dest||''}">
-  <label>인원 (명)</label><input type="number" id="ppl" inputmode="numeric" min="1" value="1">
-  <label>이용목적</label><div class="opts"><button id="p1" class="${purpose==='업무'?'on':''}" onclick="setP('업무')">업무</button><button id="p2" class="${purpose==='통역'?'on':''}" onclick="setP('통역')">통역</button></div>
-  <label>도착 계기판 (km) <span class="lbl">— ${tr.odoS.toLocaleString()}보다 커야 함</span></label>
-  <input type="number" id="odoE" inputmode="numeric" oninput="calc()"><div class="lbl" id="dist" style="margin-top:6px"></div>
+  <label>도착 계기판 (km) <span class="req">*필수</span></label>
+  <div class="lbl">출발: ${tr.odoS.toLocaleString()} km → 이 숫자보다 커야 합니다</div>
+  <div style="display:flex;align-items:center;gap:12px">
+  <input type="number" id="odoE" inputmode="numeric" oninput="calc()" style="width:50%" placeholder="예: 12530">
+  <div id="dist" style="flex:1;min-height:44px"></div></div>
+  <label>탑승인원</label>
+  <div class="pp">${[1,2,3,4,5,6].map(n=>`<button id="pp${n}" class="${n===1?'on':''}" onclick="setPP(${n})">${n<6?n:'기타'}</button>`).join("")}</div>
+  <input type="number" id="ppEtc" class="hide" inputmode="numeric" placeholder="탑승인원 숫자 입력 (6명 이상)" oninput="setPPEtc(this.value)" style="margin-top:8px">
+  <label>행선지 <span class="req">*필수</span></label>
+  <input type="text" id="dest" placeholder="어디를 다녀왔나요?" value="${tr.dest||''}">
+  <label>목적 <span class="req">*필수</span></label>
+  <div class="opts"><button id="p1" class="${purpose==='업무'?'on':''}" onclick="setP('업무')">업무</button><button id="p2" class="${purpose==='통역'?'on':''}" onclick="setP('통역')">통역</button></div>
   <label>🕒 도착 날짜·시간</label>
   <div class="two"><input type="date" id="eD" value="${dStr(new Date())}" oninput="this.dataset.t='1'"><input type="time" id="eT" value="${tStr(new Date())}" oninput="this.dataset.t='1'"></div>
   <div class="lbl" style="margin-top:6px">수정하지 않으면 저장하는 시각이 자동 기록됩니다.</div>
-  <label>⛽ 남은 주유량 <span class="lbl">(선택)</span></label>
+  <label>⛽ 잔유량 <span class="lbl">(선택)</span></label>
   <div class="gz">${Array.from({length:GAUGE_N},(_,i)=>`<button id="g${i}" onclick="setG(${i+1})"></button>`).join("")}</div><div class="lbl" id="gTxt" style="margin-top:6px">막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)</div>
-  <div class="opt">
-  <div class="acc"><button class="acch" id="fh" onclick="setF(!fuelOn)"><span>⛽ 주유 기록 <small>(선택)</small></span><i>▾</i></button>
-  <div class="accb"><input type="text" id="fuel" placeholder="예: 휘발유 40L / 60,000원"></div></div>
-  <div class="acc"><button class="acch" id="mh" onclick="setM(!fixOn)"><span>🔧 정비 기록 <small>(선택)</small></span><i>▾</i></button>
-  <div class="accb"><input type="text" id="fix" placeholder="예: 엔진오일 교환"></div></div></div>
-  <div class="err" id="err"></div><button class="main g" id="saveBtn" onclick="save()">💾 저장</button></div>`;
+  <div class="acc"><button class="acch" id="mh" onclick="toggleMemo()"><span>🔧 차량정비 및 주유 <small>(선택)</small></span><i>▾</i></button>
+  <div class="accb"><input type="text" id="memo" placeholder="예: 엔진오일 교환, 휘발유 40L 60,000원"></div></div>
+  <div class="err" id="err"></div><button class="main g" id="saveBtn" onclick="save()">💾 저장</button></div></div>`;
 }
+// 1~5명은 버튼, 6명 이상은 '기타'를 누른 뒤 숫자 입력
+function setPP(n){
+  const e=$("#ppEtc");
+  if(n===6){ people=+e.value||0; e.classList.remove("hide"); setTimeout(()=>e.focus(),100); }
+  else { people=n; e.classList.add("hide"); }
+  for(let i=1;i<=6;i++) $("#pp"+i).classList.toggle("on", i===n);
+}
+function setPPEtc(v){ people=+v||0; }
+function toggleMemo(){ const a=$("#mh").parentElement; a.classList.toggle("open"); if(a.classList.contains("open")) setTimeout(()=>$("#memo").focus(),280); }
 function editStart(){ $("#sEdit").classList.toggle("hide"); }
 function updStart(){ $("#sTxt").textContent = $("#sD").value+" "+$("#sT").value; }
 function setP(p){ purpose=p; $("#p1").classList.toggle("on",p==="업무"); $("#p2").classList.toggle("on",p==="통역"); }
@@ -286,18 +318,14 @@ function setG(k){
   const kk = gauge?k:0, cls = k>=6?"on":k>=3?"ony":"onr";
   for(let i=0;i<GAUGE_N;i++) $("#g"+i).className = i<kk?cls:"";
 }
-function setF(b){ fuelOn=b; $("#fh").parentElement.classList.toggle("open",b); if(b) setTimeout(()=>$("#fuel").focus(),280); }
-function setM(b){ fixOn=b; $("#mh").parentElement.classList.toggle("open",b); if(b) setTimeout(()=>$("#fix").focus(),280); }
-function calc(){ const tr=trips()[car], e=+$("#odoE").value; $("#dist").textContent = e>tr.odoS ? `운행거리: ${e-tr.odoS} km` : ""; }
+function calc(){ const tr=trips()[car], e=+$("#odoE").value; $("#dist").innerHTML = e>tr.odoS ? `<span style="font-size:13px;color:#999">운행거리</span><div style="font-size:26px;font-weight:800;color:#3b5bdb">${e-tr.odoS} km</div>` : ""; }
 
 async function save(){
   const tr=trips()[car], err=$("#err"), btn=$("#saveBtn");
-  const dest=$("#dest").value.trim(), ppl=+$("#ppl").value, e=+$("#odoE").value;
-  if(!dest) return err.textContent="도착지를 입력해 주세요.";
-  if(!ppl||ppl<1) return err.textContent="인원을 입력해 주세요.";
+  const dest=$("#dest").value.trim(), ppl=people, e=+$("#odoE").value;
+  if(!dest) return err.textContent="행선지를 입력해 주세요.";
+  if(!ppl||ppl<1) return err.textContent="탑승인원을 입력해 주세요.";
   if(!e||e<=tr.odoS) return err.textContent=`도착 계기판은 ${tr.odoS}보다 큰 숫자여야 합니다.`;
-  if(fuelOn&&!$("#fuel").value.trim()) return err.textContent="주유 내용을 입력하거나 주유 기록을 접어 주세요.";
-  if(fixOn&&!$("#fix").value.trim()) return err.textContent="정비 내용을 입력하거나 정비 기록을 접어 주세요.";
   const sD=$("#sD").value, sT=$("#sT").value;
   if(!sD||!sT) return err.textContent="출발 날짜와 시간을 입력해 주세요.";
   let eD=$("#eD").value, eT=$("#eT").value;
@@ -308,7 +336,7 @@ async function save(){
   const n=new Date();
   const data={action:"log", savedAt:`${dStr(n)} ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`,
     driver:tr.driver, car, dest, people:ppl, purpose, startDate:sD, startTime:sT, endTime:eT,
-    odoStart:tr.odoS, odoEnd:e, distance:e-tr.odoS, fuel:fuelOn?$("#fuel").value.trim():"", fix:fixOn?$("#fix").value.trim():"", gauge, resId:tr.resId||""};
+    odoStart:tr.odoS, odoEnd:e, distance:e-tr.odoS, fuel:"", fix:$("#memo").value.trim(), gauge, resId:tr.resId||""};
   try{
     const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)})).json();
     if(!j.ok) throw new Error(j.error||"fail");
