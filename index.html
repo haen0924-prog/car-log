@@ -137,10 +137,10 @@ function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
 // k: 출발·도착 화면 배율, g: 첫 화면 버튼의 '가' 글자 크기 (작게 → 크게), 기기에 저장
-const FONT_STEPS=[{k:0.8,g:18},{k:1.2,g:24}];  // 0: 중간(기본), 1: 크게
+const FONT_STEPS=[{k:0.8,hk:1,g:18},{k:1.2,hk:1.2,g:24}];  // k: 출발·도착 배율, hk: 첫 화면 배율, g: 버튼 글자 크기; 0: 중간(기본), 1: 크게
 let fontStep = Math.min(1, ls.get("fontStep",0));
 // 선택한 배율을 화면 전체에 적용 (첫 화면 포함)
-function applyFont(){ document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].k); }
+function applyFont(){ document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].hk); }
 // 출발·도착 화면: 크게를 골라도 나머지 글씨는 중간 배율, 운전자·출발·출발계기판 줄(--kinfo)만 선택한 배율 유지
 function kv(){
   const sel=FONT_STEPS[fontStep].k, rest = fontStep===1 ? FONT_STEPS[0].k : sel;
