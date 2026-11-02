@@ -45,7 +45,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .opt{border-top:1.5px dashed #ddd;margin-top:18px;padding-top:2px}
 .err{color:#dc2626;font-size:13px;margin-top:8px;min-height:16px}
 .hide{display:none}
-.gz{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.gz{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
 .gz button{height:46px;padding:0;background:#ebe8e2;border-radius:6px}
 .gz button.on{background:#2f9e5f}.gz button.ony{background:#f59e0b}.gz button.onr{background:#dc2626}
 .acc{border:1.5px solid #e7e4de;border-radius:14px;margin-top:12px;overflow:hidden}
@@ -80,18 +80,27 @@ const tStr = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const trips = () => ls.get("trips",{});
 const info = n => CARS.find(c=>c.n===n);
 let driver = ls.get("driver",null), car=null, view="home", pre=null, resv=null, purpose="업무", rPurpose="업무", fuelOn=false, fixOn=false, gauge="";
-let fuelMap = ls.get("fuelMap",{}), odoMap = ls.get("odoMap",{});
+let fuelMap = ls.get("fuelMap",{}), recent = ls.get("recent",{}), recentReady = false;
+const GAUGE_N = 10; // 연료 게이지 칸 수
 { const c=ls.get("cfg",null);
   applyCfg(c?c.cars:[], c?c.drivers:[]); }
 let cfgReady = !!ls.get("cfg",null), cfgFail = false;
-function lvl12(g){ const m=(g||"").match(/^(\d+)\/12/); if(m) return Math.min(12,+m[1]); return ({"가득":12,"3/4":9,"1/2":6,"1/4":3,"거의 없음":1})[g]||0; }
+// 저장된 게이지 값(예: "7/10칸", 예전 기록 "6/12칸")을 10칸 기준 칸 수로 바꿉니다
+function gaugeLvl(g){
+  const m=(g||"").match(/^(\d+)\/(\d+)/);
+  if(m) return Math.min(GAUGE_N, Math.round(+m[1]*GAUGE_N/+m[2]));
+  return ({"가득":GAUGE_N,"3/4":8,"1/2":5,"1/4":3,"거의 없음":1})[g]||0;
+}
 function fuelSvg(n){
-  const g=fuelMap[n], k=lvl12(g);
+  const g=fuelMap[n], k=gaugeLvl(g);
   if(!k) return `<span style="color:#bbb">주유량 기록 없음</span>`;
   const col=k>=6?"#2f9e5f":k>=3?"#f59e0b":"#dc2626";
-  let cells=""; for(let i=0;i<12;i++) cells+=`<rect x="${i*6}" y="2" width="5" height="22" rx="1.5" fill="${i<k?col:'#ebe8e2'}"/>`;
-  return `<svg width="72" height="36" viewBox="0 0 72 36">${cells}<text x="0" y="34" font-size="9" fill="#aaa">E</text><text x="65" y="34" font-size="9" fill="#aaa">F</text></svg>`;
+  let cells=""; for(let i=0;i<GAUGE_N;i++) cells+=`<rect x="${i*7}" y="2" width="6" height="22" rx="1.5" fill="${i<k?col:'#ebe8e2'}"/>`;
+  return `<svg width="72" height="36" viewBox="0 0 72 36">${cells}<text x="0" y="34" font-size="9" fill="#aaa">E</text><text x="62" y="34" font-size="9" fill="#aaa">F</text></svg>`;
 }
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+// 선택 차량의 직전 도착 계기판 (최신 기록 1건)
+function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
@@ -103,8 +112,10 @@ async function loadResv(){
     const r = await fetch(GAS_URL+"?action=list"); const j = await r.json();
     resv = j.ok ? j.list : [];
     if(j.ok && j.fuel){ fuelMap=j.fuel; ls.set("fuelMap",fuelMap); }
-    if(j.ok && j.odo){ odoMap=j.odo; ls.set("odoMap",odoMap); }
-    const o=$("#odoS"); if(o && o.dataset.auto==="1" && odoMap[car]) o.value=odoMap[car];
+    if(j.ok && j.recent){ recent=j.recent; ls.set("recent",recent); recentReady=true; }
+    const rec=lastRec(car), o=$("#odoS");
+    if(o && o.dataset.auto==="1" && rec) o.value=rec.odoE;
+    if($("#recBox")) refreshRecent();
     if(j.ok && j.cars && j.drivers){
       applyCfg(j.cars,j.drivers); ls.set("cfg",{cars:j.cars,drivers:j.drivers}); cfgReady=true; cfgFail=false;
       if(driver && !DRIVERS.includes(driver)){ driver=null; localStorage.removeItem("driver"); car=null; view="home"; }
@@ -209,11 +220,26 @@ async function cancelResv(id){
 }
 
 /* ---------- 출발 ---------- */
+const fmtKm = s => s ? (+s).toLocaleString() : "-";
+// 선택 차량의 최근 운행기록 3건 HTML
+function recentHtml(c){
+  const l=recent[c]||[];
+  if(!l.length) return `<div class="empty" style="padding:14px">${recentReady?"운행 기록이 없습니다":"기록을 불러오는 중..."}</div>`;
+  return l.map(r=>`<div class="info"><b>${esc(r.md)} ${esc(r.st)}~${esc(r.en)}</b> · ${esc(r.driver)}<br>${esc(r.dest)}<br>계기판 ${fmtKm(r.odoS)} → <b>${fmtKm(r.odoE)} km</b></div>`).join("");
+}
+// 기록이 새로 도착하면 기록 목록과 출발 계기판 기본값을 갱신
+function refreshRecent(){
+  const b=$("#recBox"); if(b) b.innerHTML=recentHtml(car);
+  const o=$("#odoS"), rec=lastRec(car);
+  if(o && o.dataset.auto==="1" && rec) o.value=rec.odoE;
+}
 function depart(){
-  const last = odoMap[car] || ls.get("last_"+car,""), c=info(car);
+  const rec=lastRec(car), last = rec ? rec.odoE : "", c=info(car);
   $("#app").innerHTML = `<button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 출발</h2><div class="lbl">${c.p} · 운전자 ${driver}</div>
   ${pre?`<div class="info">📅 예약: <b>${pre.dest}</b> (${pre.purpose})</div>`:''}
+  <div class="sec" style="margin:18px 0 0">직전 운행기록 (최근 3건)</div>
+  <div id="recBox">${recentHtml(car)}</div>
   <label>출발 계기판 (km)</label><input type="number" id="odoS" inputmode="numeric" placeholder="예: 52340" value="${last}" data-auto="1" oninput="this.dataset.auto=''">
   <div class="lbl" style="margin-top:6px">출발 날짜·시간은 버튼을 누르면 자동 기록됩니다.</div>
   <div class="err" id="err"></div><button class="main" onclick="doDepart()">🚀 출발</button></div>`;
@@ -243,7 +269,7 @@ function arrive(){
   <div class="two"><input type="date" id="eD" value="${dStr(new Date())}" oninput="this.dataset.t='1'"><input type="time" id="eT" value="${tStr(new Date())}" oninput="this.dataset.t='1'"></div>
   <div class="lbl" style="margin-top:6px">수정하지 않으면 저장하는 시각이 자동 기록됩니다.</div>
   <label>⛽ 남은 주유량 <span class="lbl">(선택)</span></label>
-  <div class="gz">${Array.from({length:12},(_,i)=>`<button id="g${i}" onclick="setG(${i+1})"></button>`).join("")}</div><div class="lbl" id="gTxt" style="margin-top:6px">막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)</div>
+  <div class="gz">${Array.from({length:GAUGE_N},(_,i)=>`<button id="g${i}" onclick="setG(${i+1})"></button>`).join("")}</div><div class="lbl" id="gTxt" style="margin-top:6px">막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)</div>
   <div class="opt">
   <div class="acc"><button class="acch" id="fh" onclick="setF(!fuelOn)"><span>⛽ 주유 기록 <small>(선택)</small></span><i>▾</i></button>
   <div class="accb"><input type="text" id="fuel" placeholder="예: 휘발유 40L / 60,000원"></div></div>
@@ -255,9 +281,9 @@ function editStart(){ $("#sEdit").classList.toggle("hide"); }
 function updStart(){ $("#sTxt").textContent = $("#sD").value+" "+$("#sT").value; }
 function setP(p){ purpose=p; $("#p1").classList.toggle("on",p==="업무"); $("#p2").classList.toggle("on",p==="통역"); }
 function setG(k){
-  gauge = gauge===k+"/12칸" ? "" : k+"/12칸";
+  gauge = gauge===k+"/"+GAUGE_N+"칸" ? "" : k+"/"+GAUGE_N+"칸";
   const kk = gauge?k:0, cls = k>=6?"on":k>=3?"ony":"onr";
-  for(let i=0;i<12;i++) $("#g"+i).className = i<kk?cls:"";
+  for(let i=0;i<GAUGE_N;i++) $("#g"+i).className = i<kk?cls:"";
 }
 function setF(b){ fuelOn=b; $("#fh").parentElement.classList.toggle("open",b); if(b) setTimeout(()=>$("#fuel").focus(),280); }
 function setM(b){ fixOn=b; $("#mh").parentElement.classList.toggle("open",b); if(b) setTimeout(()=>$("#fix").focus(),280); }
@@ -285,7 +311,10 @@ async function save(){
   try{
     const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)})).json();
     if(!j.ok) throw new Error(j.error||"fail");
-    const t=trips(); delete t[car]; ls.set("trips",t); ls.set("last_"+car,e); odoMap[car]=String(e); ls.set("odoMap",odoMap);
+    const t=trips(); delete t[car]; ls.set("trips",t);
+    // 방금 저장한 기록을 기기 안의 최근 기록 맨 앞에 넣어 둡니다 (다음 출발 때 바로 반영)
+    recent[car]=[{md:sD.slice(5).replace("-","/"), st:tr.time, en:eT, driver:tr.driver, dest, odoS:String(tr.odoS), odoE:String(e)}, ...(recent[car]||[])].slice(0,3);
+    ls.set("recent",recent);
     if(gauge){ fuelMap[car]=gauge; ls.set("fuelMap",fuelMap); }
     if(tr.resId && resv) resv=resv.filter(r=>r.id!==tr.resId);
     toast("저장되었습니다"); setTimeout(goHome,1400);
@@ -295,8 +324,8 @@ async function save(){
 /* ---------- 기관 연결 ---------- */
 const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button></div>`;
 function clearCaches(){
-  Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","odoMap","driver","trips"].includes(k)||k.startsWith("last_")) localStorage.removeItem(k); });
-  driver=null; car=null; resv=null; fuelMap={}; odoMap={}; applyCfg([],[]); cfgReady=false; cfgFail=false;
+  Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","recent","driver","trips"].includes(k)) localStorage.removeItem(k); });
+  driver=null; car=null; resv=null; fuelMap={}; recent={}; recentReady=false; applyCfg([],[]); cfgReady=false; cfgFail=false;
 }
 function setGas(u){ if(u!==ls.get("gas","")) clearCaches(); ls.set("gas",u); GAS_URL=u; }
 function openConnect(){ view="connect"; render(); }
