@@ -44,6 +44,13 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .opt{border-top:1.5px dashed #ddd;margin-top:18px;padding-top:2px}
 .err{color:#dc2626;font-size:calc(13px * var(--k));margin-top:8px;min-height:16px}
 .hide{display:none}
+.gbtn{width:100%;display:flex;justify-content:space-between;align-items:center;background:none;padding:0;font-size:calc(22px * var(--k));font-weight:800;color:#1f1f1f}
+.gbtn i{font-style:normal;transition:transform .25s}
+.guide.open .gbtn i{transform:rotate(180deg)}
+.guide .gbody{display:none;margin-top:12px;font-size:calc(19px * var(--k));line-height:1.8;color:#333;word-break:keep-all;overflow-wrap:break-word}
+.guide.open .gbody{display:block}
+.guide .gbody p{margin-top:14px;font-size:calc(19px * var(--k))}
+.guide .gbody b{font-size:calc(21px * var(--k))}
 .big label{font-size:calc(24px * var(--k));margin:26px 0 10px}
 .big h2{font-size:calc(26.67px * var(--k))}
 .big .lbl{font-size:calc(18px * var(--k))}
@@ -134,6 +141,7 @@ function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
+function toggleGuide(){ document.querySelector(".guide").classList.toggle("open"); }
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
 
 async function loadResv(){
@@ -186,10 +194,12 @@ function home(){
   <div class="head"><h1>차량<span>운행</span>일지</h1>
     <div class="right"><button class="pill" onclick="changeDriver()">👤 ${driver}</button></div></div>
   <div class="card row"><div><div class="lbl">오늘</div><div class="date">${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)</div></div><div class="dot"></div></div>
-  <div class="card guide"><b>사용 방법</b>
+  <div class="card guide"><button class="gbtn" onclick="toggleGuide()"><span>사용 방법</span><i>▾</i></button>
+  <div class="gbody">
   <p><b>1. 출발할 때</b><br>차량 버튼을 누르고, 계기판 숫자를 확인한 뒤 🚀 출발을 누르세요. 숫자가 다르면 직접 고쳐 주세요.</p>
   <p><b>2. 출발 기록을 안 했을 때</b><br>도착할 때 차량 버튼을 누르고 🚀 출발을 먼저 누르세요. 도착 화면에서 출발 옆 [수정]을 눌러 실제 출발 날짜·시간으로 맞춘 뒤, 도착 정보를 입력하고 저장하세요.</p>
-  <p>운행 중인 차량은 "운행중" 표시가 보이며, 그 차량을 누르면 도착 화면이 열립니다.</p></div>
+  <p>운행 중인 차량은 "운행중" 표시가 보이며, 그 차량을 누르면 도착 화면이 열립니다.</p>
+  </div></div>
   <div class="sec">차량 선택</div>
   ${CARS.length||!cfgReady?"":`<div class="empty">시트의 "차량" 탭에 차량을 등록해 주세요.</div>`}<div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
     <div class="ic" style="background:${c.bg}">${svgCar(c.c)}</div><div class="pl" style="color:${c.c}">${c.p}</div><div class="nm">${c.n}</div>
