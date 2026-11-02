@@ -139,9 +139,10 @@ function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path
 // k: 출발·도착 화면 배율, g: 첫 화면 버튼의 '가' 글자 크기 (작게 → 크게), 기기에 저장
 const FONT_STEPS=[{k:0.7,g:14},{k:0.8,g:18},{k:1.2,g:24}];
 let fontStep = ls.get("fontStep",1);  // 기본은 중간
-// 출발·도착 화면에만 배율 적용 (첫 화면은 그대로)
+// 선택한 배율을 화면 전체에 적용 (첫 화면 포함)
+function applyFont(){ document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].k); }
 function kv(){ return `--k:${FONT_STEPS[fontStep].k}`; }
-function setFont(i){ fontStep=i; ls.set("fontStep",i); if(view==="home" && !car) home(); }
+function setFont(i){ fontStep=i; ls.set("fontStep",i); applyFont(); if(view==="home" && !car) home(); }
 
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
 
@@ -419,6 +420,7 @@ async function copyLink(){
 { const q=new URLSearchParams(location.search).get("gas");
   if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
   else GAS_URL=ls.get("gas",""); }
+applyFont();
 render(); loadResv();
 </script>
 </body>
