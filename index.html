@@ -45,24 +45,36 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .opt{border-top:1.5px dashed #ddd;margin-top:18px;padding-top:2px}
 .err{color:#dc2626;font-size:13px;margin-top:8px;min-height:16px}
 .hide{display:none}
+.fontbar{display:flex;gap:8px}
+.fontbar button{flex:1;padding:14px 8px;background:#f6f4f0;border:2px solid #e7e4de;font-weight:600;font-size:16px}
+.fontbar button.on{background:#e9edff;border-color:#3b5bdb;color:#3b5bdb;font-weight:800}
 .big label{font-size:28px;margin:26px 0 10px}
 .big h2{font-size:40px}
 .big .lbl{font-size:22px}
-.big .info{font-size:30px;line-height:1.8}
+.big .info{font-size:clamp(16px,4.9vw,28px);line-height:1.8}
 .big input{font-size:30px;padding:18px}
-.big .two input{font-size:24px;padding:14px}
+.big .two input{font-size:clamp(15px,4.3vw,22px);padding:12px 8px}
+.two>*{min-width:0}
+.two input{width:100%;min-width:0}
 .big .opts button{font-size:30px;padding:20px}
 .big .main{font-size:30px;padding:22px}
 .big .back{font-size:24px}
-.big .edit{font-size:24px;padding:8px 18px}
+.big .edit{font-size:clamp(14px,3.8vw,20px);padding:6px 12px}
 .big .err{font-size:22px}
 .big .req{font-size:20px;color:#dc2626}
 .big .gz button{height:64px}
-.big .acch{font-size:24px;padding:18px}
+.big .acch{font-size:16px;padding:14px}
+#memo::placeholder{font-size:20px}
 .big .acc.open .accb{max-height:160px}
 .big .sec{font-size:24px}
+#recBox{font-size:clamp(15px,4.6vw,24px)}
+.rec{background:#f8f7f4;border-radius:14px;padding:10px 12px;margin-top:8px;line-height:1.5}
+.rec .l1{font-weight:700;color:#3b5bdb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .nw{white-space:nowrap}
+.rec b{color:#1f1f1f}
+.rec .l3 b{color:#3b5bdb}
 .pp{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-.pp button{height:76px;background:#fff;border:2px solid #e7e4de;font-size:30px;font-weight:800;color:#1f1f1f}
+.pp button{height:76px;background:#fff;border:2px solid #e7e4de;font-size:clamp(15px,4.4vw,28px);font-weight:800;color:#1f1f1f;white-space:nowrap;padding:0;min-width:0}
 .pp button.on{background:#e9edff;border-color:#3b5bdb;color:#3b5bdb}
 .gz{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
 .gz button{height:46px;padding:0;background:#ebe8e2;border-radius:6px}
@@ -123,6 +135,17 @@ function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
+// 글씨 크기 단계: 기본(1배) → 1.2배 → 1.5배 (기기에 저장)
+const FONT_STEPS=[{k:1,n:"기본"},{k:1.2,n:"1.2배"},{k:1.5,n:"1.5배"}];
+let fontStep = ls.get("fontStep",0);
+// 화면 전체를 비율로 키움 (가로 넘침 방지를 위해 폭도 함께 조정)
+function applyFont(){
+  const k=FONT_STEPS[fontStep].k, a=$("#app");
+  a.style.zoom = k===1 ? "" : k;
+  a.style.width = k===1 ? "" : (100/k)+"%";
+}
+function setFont(i){ fontStep=i; ls.set("fontStep",i); applyFont(); if(view==="home" && !car) home(); }
+
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
 
 async function loadResv(){
@@ -182,6 +205,7 @@ function home(){
     <div class="right"><button class="pill" onclick="changeDriver()">👤 ${driver}</button>
     <div class="fabw"><button class="fab" onclick="openReserve()">📅</button>예약</div></div></div>
   <div class="card row"><div><div class="lbl">오늘</div><div class="date">${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)</div></div><div class="dot"></div></div>
+  <div class="card"><div class="lbl" style="margin-bottom:8px">글씨 크기</div><div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" onclick="setFont(${i})">${s.n}</button>`).join("")}</div></div>
   <div class="card guide"><b>오늘 예약이 있다면 <span class="p">카드를 탭</span>해주세요</b><p>예약이 없거나 직접 기록할 경우<br><span class="bl"><b style="font-size:14px">아래 차량 버튼</b></span>을 탭하면 바로 이동합니다</p></div>
   <div class="sec">오늘 예약</div>${list}
   <div class="sec">차량 선택</div>
@@ -244,7 +268,13 @@ const fmtKm = s => s ? (+s).toLocaleString() : "-";
 function recentHtml(c){
   const l=recent[c]||[];
   if(!l.length) return `<div class="empty" style="padding:14px">${recentReady?"운행 기록이 없습니다":"기록을 불러오는 중..."}</div>`;
-  return l.map(r=>`<div class="info"><b>${esc(r.md)} ${esc(r.st)}~${esc(r.en)}</b> · ${esc(r.driver)} · ${esc(r.dest)}<br>계기판 ${fmtKm(r.odoS)} → <b>${fmtKm(r.odoE)} km</b></div>`).join("");
+  // 3줄: 날짜·시간 / 운전자·행선지 / 계기판. 행선지는 10자 이하면 줄바꿈 없이, 10자를 넘으면 다음 줄로 넘김
+  return l.map(r=>{
+    const shortDest = (r.dest||"").length <= 10;
+    return `<div class="rec"><div class="l1">${esc(r.md)} ${esc(r.st)}~${esc(r.en)}</div>`+
+      `<div class="l2"><span class="nw"><b>${esc(r.driver)}</b></span> · <span class="${shortDest?'nw':''}">${esc(r.dest)}</span></div>`+
+      `<div class="l3">계기판 ${fmtKm(r.odoS)} → <b>${fmtKm(r.odoE)} km</b></div></div>`;
+  }).join("");
 }
 // 기록이 새로 도착하면 기록 목록과 출발 계기판 기본값을 갱신
 function refreshRecent(){
@@ -277,7 +307,7 @@ function arrive(){
   const tr=trips()[car], c=info(car); purpose=tr.purpose||"업무"; gauge=""; people=1;
   $("#app").innerHTML = `<div class="big"><button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 도착</h2>
-  <div class="info">운전자: <b>${tr.driver}</b><br>출발: <b id="sTxt">${tr.date} ${tr.time}</b><button class="edit" onclick="editStart()">수정</button><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
+  <div class="info">운전자: <b>${tr.driver}</b><br><span style="white-space:nowrap">출발: <b id="sTxt">${tr.date} ${tr.time}</b> <button class="edit" onclick="editStart()">수정</button></span><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
   <div id="sEdit" class="hide" style="margin-top:8px"><div class="lbl">출발 날짜·시간 수정</div>
   <div class="two" style="margin-top:6px"><input type="date" id="sD" value="${tr.date}" oninput="updStart()"><input type="time" id="sT" value="${tr.time}" oninput="updStart()"></div></div>
   <label>도착 계기판 (km) <span class="req">*필수</span></label>
@@ -288,9 +318,9 @@ function arrive(){
   <label>탑승인원</label>
   <div class="pp">${[1,2,3,4,5,6].map(n=>`<button id="pp${n}" class="${n===1?'on':''}" onclick="setPP(${n})">${n<6?n:'기타'}</button>`).join("")}</div>
   <div id="ppEtc" style="display:none;align-items:center;justify-content:center;gap:16px;margin-top:10px">
-  <button onclick="ppStep(-1)" aria-label="한 명 줄이기" style="width:80px;height:70px;background:#f6f4f0;border:2px solid #dcd8d1;font-size:30px;font-weight:800">▼</button>
-  <div style="min-width:110px;text-align:center;font-size:44px;font-weight:800"><span id="ppNum">6</span>명</div>
-  <button onclick="ppStep(1)" aria-label="한 명 늘리기" style="width:80px;height:70px;background:#e9edff;border:2px solid #3b5bdb;color:#3b5bdb;font-size:30px;font-weight:800">▲</button></div>
+  <button onclick="ppStep(-1)" aria-label="한 명 줄이기" style="width:70px;height:70px;background:#f6f4f0;border:2px solid #dcd8d1;font-size:30px;font-weight:800">▼</button>
+  <div style="min-width:90px;text-align:center;font-size:40px;font-weight:800"><span id="ppNum">6</span>명</div>
+  <button onclick="ppStep(1)" aria-label="한 명 늘리기" style="width:70px;height:70px;background:#e9edff;border:2px solid #3b5bdb;color:#3b5bdb;font-size:30px;font-weight:800">▲</button></div>
   <label>행선지 <span class="req">*필수</span></label>
   <input type="text" id="dest" placeholder="어디를 다녀왔나요?" value="${tr.dest||''}">
   <label>목적 <span class="req">*필수</span></label>
@@ -392,6 +422,7 @@ async function copyLink(){
 { const q=new URLSearchParams(location.search).get("gas");
   if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
   else GAS_URL=ls.get("gas",""); }
+applyFont();
 render(); loadResv();
 </script>
 </body>
