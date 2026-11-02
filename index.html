@@ -46,8 +46,8 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .opt{border-top:1.5px dashed #ddd;margin-top:18px;padding-top:2px}
 .err{color:#dc2626;font-size:calc(13px * var(--k));margin-top:8px;min-height:16px}
 .hide{display:none}
-.fontbar{display:flex;gap:8px}
-.fontbar button{flex:1;padding:14px 8px;background:#f6f4f0;border:2px solid #e7e4de;font-weight:600;font-size:calc(16px * var(--k))}
+.fontbar{display:flex;gap:6px;justify-content:flex-end;margin-top:4px}
+.fontbar button{padding:6px 10px;background:#fff;border:1.5px solid #e7e4de;font-weight:600;font-size:13px;color:#777}
 .fontbar button.on{background:#e9edff;border-color:#3b5bdb;color:#3b5bdb;font-weight:800}
 .big label{font-size:calc(28px * var(--k));margin:26px 0 10px}
 .big h2{font-size:calc(40px * var(--k))}
@@ -137,7 +137,7 @@ function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
 // 글씨 크기 단계: 기본(1배) → 1.2배 → 1.5배 (기기에 저장)
-const FONT_STEPS=[{k:1,n:"기본"},{k:1.2,n:"1.2배"},{k:1.5,n:"1.5배"}];
+const FONT_STEPS=[{k:0.8,n:"가(작게)"},{k:1,n:"가(중간)"},{k:1.2,n:"가(크게)"}];
 let fontStep = ls.get("fontStep",0);
 // 화면 전체를 비율로 키움 (가로 넘침 방지를 위해 폭도 함께 조정)
 // 글씨와 버튼 높이를 --k 값만큼 함께 키움 (화면 폭은 그대로 유지)
@@ -201,11 +201,11 @@ function home(){
     : mine.length ? mine.map(r=>`<button class="rcard" onclick="useResv('${r.id}')"><b>${r.start}~${r.end} · ${r.car}</b><small>${r.driver} · ${r.dest} · ${r.purpose}</small></button>`).join("")
     : `<div class="empty">오늘 예약이 없습니다</div>`;
   $("#app").innerHTML = `
+  <div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" onclick="setFont(${i})">${s.n}</button>`).join("")}</div>
   <div class="head"><h1>차량<span>운행</span>일지</h1>
     <div class="right"><button class="pill" onclick="changeDriver()">👤 ${driver}</button>
     <div class="fabw"><button class="fab" onclick="openReserve()">📅</button>예약</div></div></div>
   <div class="card row"><div><div class="lbl">오늘</div><div class="date">${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)</div></div><div class="dot"></div></div>
-  <div class="card"><div class="lbl" style="margin-bottom:8px">글씨 크기</div><div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" onclick="setFont(${i})">${s.n}</button>`).join("")}</div></div>
   <div class="card guide"><b>오늘 예약이 있다면 <span class="p">카드를 탭</span>해주세요</b><p>예약이 없거나 직접 기록할 경우<br><span class="bl"><b style="font-size:calc(14px * var(--k))">아래 차량 버튼</b></span>을 탭하면 바로 이동합니다</p></div>
   <div class="sec">오늘 예약</div>${list}
   <div class="sec">차량 선택</div>
