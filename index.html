@@ -283,7 +283,7 @@ function arrive(){
   <label>도착 계기판 (km) <span class="req">*필수</span></label>
   <div class="lbl">출발: ${tr.odoS.toLocaleString()} km → 이 숫자보다 커야 합니다</div>
   <div style="display:flex;align-items:center;gap:12px">
-  <input type="number" id="odoE" inputmode="numeric" oninput="calc()" style="width:50%" placeholder="예: 12530">
+  <input type="number" id="odoE" inputmode="numeric" oninput="calc()" style="width:50%">
   <div id="dist" style="flex:1;min-height:44px"></div></div>
   <label>탑승인원</label>
   <div class="pp">${[1,2,3,4,5,6].map(n=>`<button id="pp${n}" class="${n===1?'on':''}" onclick="setPP(${n})">${n<6?n:'기타'}</button>`).join("")}</div>
