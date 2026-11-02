@@ -136,15 +136,12 @@ function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
-// 글씨 크기 단계: 기본(1배) → 1.2배 → 1.5배 (기기에 저장)
-const FONT_STEPS=[{k:0.8,n:"가(작게)"},{k:1,n:"가(중간)"},{k:1.2,n:"가(크게)"}];
-let fontStep = ls.get("fontStep",0);
-// 화면 전체를 비율로 키움 (가로 넘침 방지를 위해 폭도 함께 조정)
-// 글씨와 버튼 높이를 --k 값만큼 함께 키움 (화면 폭은 그대로 유지)
-function applyFont(){
-  document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].k);
-}
-function setFont(i){ fontStep=i; ls.set("fontStep",i); applyFont(); if(view==="home" && !car) home(); }
+// k: 출발·도착 화면 배율, g: 첫 화면 버튼의 '가' 글자 크기 (작게 → 크게), 기기에 저장
+const FONT_STEPS=[{k:0.7,g:14},{k:0.8,g:18},{k:1.2,g:24}];
+let fontStep = ls.get("fontStep",1);  // 기본은 중간
+// 출발·도착 화면에만 배율 적용 (첫 화면은 그대로)
+function kv(){ return `--k:${FONT_STEPS[fontStep].k}`; }
+function setFont(i){ fontStep=i; ls.set("fontStep",i); if(view==="home" && !car) home(); }
 
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
 
@@ -201,7 +198,7 @@ function home(){
     : mine.length ? mine.map(r=>`<button class="rcard" onclick="useResv('${r.id}')"><b>${r.start}~${r.end} · ${r.car}</b><small>${r.driver} · ${r.dest} · ${r.purpose}</small></button>`).join("")
     : `<div class="empty">오늘 예약이 없습니다</div>`;
   $("#app").innerHTML = `
-  <div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" onclick="setFont(${i})">${s.n}</button>`).join("")}</div>
+  <div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" style="font-size:${s.g}px" aria-label="글씨 ${['작게','중간','크게'][i]}" onclick="setFont(${i})">가</button>`).join("")}</div>
   <div class="head"><h1>차량<span>운행</span>일지</h1>
     <div class="right"><button class="pill" onclick="changeDriver()">👤 ${driver}</button>
     <div class="fabw"><button class="fab" onclick="openReserve()">📅</button>예약</div></div></div>
@@ -284,7 +281,7 @@ function refreshRecent(){
 }
 function depart(){
   const rec=lastRec(car), last = rec ? rec.odoE : "", c=info(car);
-  $("#app").innerHTML = `<div class="big"><button class="back" onclick="goHome()">← 차량 선택</button>
+  $("#app").innerHTML = `<div class="big" style="${kv()}"><button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 출발</h2><div class="lbl">${c.p} · 운전자 ${driver}</div>
   ${pre?`<div class="info">📅 예약: <b>${pre.dest}</b> (${pre.purpose})</div>`:''}
   <label>출발 계기판 (km)</label><input type="number" id="odoS" inputmode="numeric" placeholder="예: 52340" value="${last}" data-auto="1" oninput="this.dataset.auto=''">
@@ -305,7 +302,7 @@ function doDepart(){
 /* ---------- 도착 ---------- */
 function arrive(){
   const tr=trips()[car], c=info(car); purpose=tr.purpose||"업무"; gauge=""; people=1;
-  $("#app").innerHTML = `<div class="big"><button class="back" onclick="goHome()">← 차량 선택</button>
+  $("#app").innerHTML = `<div class="big" style="${kv()}"><button class="back" onclick="goHome()">← 차량 선택</button>
   <div class="card" style="border-top:5px solid ${c.c}"><h2>${car} · 도착</h2>
   <div class="info">운전자: <b>${tr.driver}</b><br><span style="white-space:nowrap">출발: <b id="sTxt">${tr.date} ${tr.time}</b> <button class="edit" onclick="editStart()">수정</button></span><br>출발 계기판: <b>${tr.odoS.toLocaleString()} km</b></div>
   <div id="sEdit" class="hide" style="margin-top:8px"><div class="lbl">출발 날짜·시간 수정</div>
@@ -422,7 +419,6 @@ async function copyLink(){
 { const q=new URLSearchParams(location.search).get("gas");
   if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
   else GAS_URL=ls.get("gas",""); }
-applyFont();
 render(); loadResv();
 </script>
 </body>
