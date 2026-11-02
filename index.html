@@ -50,7 +50,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .fontbar button{padding:6px 10px;background:#fff;border:1.5px solid #e7e4de;font-weight:600;font-size:13px;color:#777}
 .fontbar button.on{background:#e9edff;border-color:#3b5bdb;color:#3b5bdb;font-weight:800}
 .big label{font-size:calc(28px * var(--k));margin:26px 0 10px}
-.big h2{font-size:calc(40px * var(--k))}
+.big h2{font-size:calc(26.67px * var(--k))}
 .big .lbl{font-size:calc(22px * var(--k))}
 .big .info{font-size:calc(clamp(16px,4.9vw,28px) * var(--kinfo, 1));line-height:1.8}
 .big input{font-size:calc(30px * var(--k));padding:18px}
@@ -64,7 +64,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .big .err{font-size:calc(22px * var(--k))}
 .big .req{font-size:calc(20px * var(--k));color:#dc2626}
 .big .gz button{height:calc(64px * var(--k))}
-.big .acch{font-size:calc(16px * var(--k));padding:14px}
+.big .acch{font-size:calc(24px * var(--k));padding:14px}
 #memo::placeholder{font-size:calc(20px * var(--k))}
 .big .acc.open .accb{max-height:160px}
 .big .sec{font-size:calc(24px * var(--k))}
@@ -137,13 +137,13 @@ function lastRec(c){ return (recent[c]||[]).find(r=>r.odoE)||null; }
 function svgCar(c){return `<svg width="46" height="28" viewBox="0 0 64 36"><path d="M5 25 L10 14 Q13 8 20 8 H42 Q49 8 53 15 L59 22 Q61 25 58 27 H5Z" fill="${c}"/><rect x="17" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><rect x="32" y="12" width="12" height="7" rx="2" fill="#fff" opacity=".6"/><circle cx="19" cy="28" r="5" fill="#222"/><circle cx="46" cy="28" r="5" fill="#222"/><circle cx="19" cy="28" r="2" fill="#fff"/><circle cx="46" cy="28" r="2" fill="#fff"/></svg>`}
 
 // k: 출발·도착 화면 배율, g: 첫 화면 버튼의 '가' 글자 크기 (작게 → 크게), 기기에 저장
-const FONT_STEPS=[{k:0.7,g:14},{k:0.8,g:18},{k:1.2,g:24}];
-let fontStep = ls.get("fontStep",1);  // 기본은 중간
+const FONT_STEPS=[{k:0.8,g:18},{k:1.2,g:24}];  // 0: 중간(기본), 1: 크게
+let fontStep = Math.min(1, ls.get("fontStep",0));
 // 선택한 배율을 화면 전체에 적용 (첫 화면 포함)
 function applyFont(){ document.documentElement.style.setProperty("--k", FONT_STEPS[fontStep].k); }
 // 출발·도착 화면: 크게를 골라도 나머지 글씨는 중간 배율, 운전자·출발·출발계기판 줄(--kinfo)만 선택한 배율 유지
 function kv(){
-  const sel=FONT_STEPS[fontStep].k, rest = fontStep===2 ? FONT_STEPS[1].k : sel;
+  const sel=FONT_STEPS[fontStep].k, rest = fontStep===1 ? FONT_STEPS[0].k : sel;
   return `--k:${rest};--kinfo:${sel}`;
 }
 function setFont(i){ fontStep=i; ls.set("fontStep",i); applyFont(); if(view==="home" && !car) home(); }
@@ -203,7 +203,7 @@ function home(){
     : mine.length ? mine.map(r=>`<button class="rcard" onclick="useResv('${r.id}')"><b>${r.start}~${r.end} · ${r.car}</b><small>${r.driver} · ${r.dest} · ${r.purpose}</small></button>`).join("")
     : `<div class="empty">오늘 예약이 없습니다</div>`;
   $("#app").innerHTML = `
-  <div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" style="font-size:${s.g}px" aria-label="글씨 ${['작게','중간','크게'][i]}" onclick="setFont(${i})">가</button>`).join("")}</div>
+  <div class="fontbar">${FONT_STEPS.map((s,i)=>`<button class="${i===fontStep?'on':''}" style="font-size:${s.g}px" aria-label="글씨 ${['중간','크게'][i]}" onclick="setFont(${i})">가</button>`).join("")}</div>
   <div class="head"><h1>차량<span>운행</span>일지</h1>
     <div class="right"><button class="pill" onclick="changeDriver()">👤 ${driver}</button>
     <div class="fabw"><button class="fab" onclick="openReserve()">📅</button>예약</div></div></div>
