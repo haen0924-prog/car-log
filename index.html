@@ -91,14 +91,95 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .edit{background:#e9edff;color:#3b5bdb;padding:3px 10px;font-size:calc(12px * var(--k));font-weight:700;border-radius:8px;margin-left:8px}
 .x{background:#fee2e2;color:#b91c1c;padding:6px 10px;font-size:calc(12px * var(--k));font-weight:700;border-radius:10px}
 .toast{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:#2f9e5f;color:#fff;padding:18px 28px;border-radius:16px;font-size:calc(18px * var(--k));font-weight:800;display:none;z-index:9;box-shadow:0 6px 20px #0004}
-.arow{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:8px}
+.arow{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;margin-top:8px}
 .arow1{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px}
 .arow input,.arow1 input,#pinIn{font-size:calc(16px * var(--k));margin-top:0}
 .arow button,.arow1 button{padding:8px 12px;background:#fdeaea;color:#b42318;font-weight:700;border-radius:8px;font-size:calc(14px * var(--k))}
 .tb{width:100%;border-collapse:collapse;font-size:calc(14px * var(--k));margin-top:12px}
 .tb td,.tb th{border-bottom:1px solid #ddd;padding:6px 4px;text-align:left}
 .tb tr.flag td{background:#fff3cd}
-@media print{ body *{visibility:hidden} #printArea,#printArea *{visibility:visible} #printArea{position:absolute;left:0;top:0;width:100%} .noprint{display:none} }
+@media print{ @page{size:A4 portrait;margin:12mm} #app{display:none!important} #printHost{display:block} .noprint{display:none} }
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.fgrid label{font-size:calc(14px * var(--k));display:flex;flex-direction:column;gap:4px;font-weight:700}
+.fgrid input,.fgrid select,.fgrid textarea{font-size:calc(16px * var(--k));margin-top:0;width:100%}
+.mini{padding:6px 10px;background:#eaeefd;color:#3b5bdb;font-weight:700;border-radius:8px;font-size:calc(14px * var(--k))}
+.carsel{width:100%;padding:12px;font-size:calc(16px * var(--k));margin-bottom:10px}
+.pg{background:#fff;padding:8px;margin-top:14px;border:1px solid #bbb;page-break-after:always}
+.pg:last-child{page-break-after:auto}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;font-size:12px}
+.pt{font-weight:800;font-size:16px;width:100%}
+.pt2{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.pt2 th,.pt2 td{border:1px solid #666;padding:3px 2px;text-align:center;color:#000}
+.pt2 td{height:22px}
+.pt2 tr.flag td{background:#fff3cd}
+.sg{border-collapse:collapse;font-size:11px}
+.sg th,.sg td{border:1px solid #666;padding:2px 8px;text-align:center;color:#000}
+.sg td{height:24px;width:60px}
+body.pc{max-width:1600px;padding:14px 28px 24px}
+body.pc .card{margin-bottom:12px}
+.topbar{display:flex;justify-content:space-between;align-items:center}
+.split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.scroll{max-height:calc(100vh - 260px);min-height:360px;overflow:auto;margin-top:10px}
+body.pc .tb{font-size:15px}
+body.pc .tb th{position:sticky;top:0;background:#fff}
+body.pc .fgrid{grid-template-columns:1fr 1fr 1fr}
+@media (min-width:1200px){ body.pc .main{font-size:16px} }
+.adm{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start}
+.side{display:flex;flex-direction:column;gap:10px;position:sticky;top:10px}
+.side button{text-align:left;padding:18px 16px;background:#f6f4f0;border:2px solid #e7e4de;border-radius:12px;font-weight:700;font-size:calc(16px * var(--k))}
+.side button.on{background:#e9edff;border-color:#3b5bdb;color:#3b5bdb;font-weight:800}
+.cont{min-width:0}
+.sgset{margin-top:12px}
+.sgrow{display:grid;grid-template-columns:130px 1fr;gap:8px;margin-top:8px}
+.sgrow input{margin-top:0;font-size:calc(16px * var(--k))}
+.sg td.sgn{height:54px;font-size:12px}
+.pf{display:flex;justify-content:space-between;font-size:11px;color:#000;border-top:1px solid #666;margin-top:8px;padding-top:4px}
+
+.ph .no{font-weight:800;font-size:14px;color:#000}
+.sg{white-space:nowrap}
+.sg th,.sg td{white-space:nowrap;min-width:72px;padding:2px 8px}
+.pno{font-weight:800;font-size:13px;color:#000;margin-top:6px;text-align:left}
+body.pc .gate{max-width:440px;margin:90px auto 0}
+body.pc .gate .card{margin-top:0}
+.pk{display:inline-flex;align-items:center;gap:4px;margin:4px 12px 4px 0;font-size:15px}
+.pk-car{margin-top:8px;line-height:2}
+.tb.wide{width:100%}
+body.pc .tb.wide th,body.pc .tb.wide td{font-size:13px;padding:5px 3px;word-break:keep-all;line-height:1.35}
+body.pc .scroll{max-height:calc(100vh - 250px);min-height:260px}
+body.pc .head h1{font-size:22px;margin:4px 0 8px}
+body.pc .head{margin-bottom:6px}
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  .pg{height:273mm;padding:0;border:0;overflow:hidden;box-sizing:border-box;page-break-inside:avoid;display:flex;flex-direction:column;justify-content:center}
+  .pt2 td{height:9.5mm}
+  .pt2 tr.blank td{height:9.5mm}
+  .pno{margin-top:6mm;margin-bottom:2mm}
+}
+.ph{align-items:flex-start;flex-wrap:nowrap}
+.phl{flex:1;min-width:0}
+.pt{font-size:32px;font-weight:800;width:auto;line-height:1.2}
+.pcar{font-size:12px;margin-top:4px;line-height:1.3}
+.kmbox{margin-top:12px;padding:10px 12px;background:#f6f4f0;border-radius:10px;font-size:14px;line-height:1.7}
+.signrow{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-top:12px}
+.signrow .cnt{width:120px;flex:0 0 120px;margin-top:0;font-size:calc(16px * var(--k))}
+.signrow .tt{flex:1 1 0;min-width:0;margin-top:0;font-size:calc(16px * var(--k))}
+.pkd{background:#fff;border:2px solid #e7e4de;border-radius:10px;margin-top:10px;padding:10px 14px}
+.pkd summary{cursor:pointer;font-size:16px;line-height:1.8}
+.pkl{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid #eee}
+.pkl .pk{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
+.pkl .pk input{width:18px;height:18px;margin:0}
+.selsum{margin-top:12px;padding:12px 14px;background:#e9edff;border-radius:10px;font-size:15px;line-height:1.7;color:#1f1f1f}
+.pcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.selbox{margin:10px 0 14px;max-height:calc(100vh - 380px);min-height:120px;overflow:auto}
+.selrow{padding:9px 10px;border-bottom:1px solid #eee;font-size:15px}
+.mhead{text-align:center;font-size:30px;font-weight:700;margin:6mm 0 4mm;color:#000}
+.minfo{width:100%;border-collapse:collapse;font-size:14px;background:#f2f2f2;color:#000}
+.minfo td{border:1px solid #000;padding:6px 8px}
+.mtb{width:100%;border-collapse:collapse;font-size:12px;margin-top:6mm;color:#000}
+.mtb th,.mtb td{border:1px solid #000;padding:6px 4px;text-align:center}
+.mpage{background:#fff;padding:8px;page-break-after:always}
+.mpage:last-child{page-break-after:auto}
+@media print{ .arow{display:none} }
 </style>
 </head>
 <body>
@@ -172,6 +253,7 @@ async function loadResv(){
 }
 
 function render(){
+  document.body.classList.toggle("pc", view==="admin");
   if(!GAS_URL) return connectView();
   if(view==="connect") return connectView();
   if(view==="admin") return adminView();
@@ -344,27 +426,32 @@ async function save(){
 }
 
 
-/* ---------- 관리자 (PC에서 차량·운전자 관리 및 기록 출력) ---------- */
-let adminPin = "", adminTab = "cars", adminDraft = null, adminRecs = null;
+/* ---------- 관리자 (PC) ---------- */
+function toggleFull(){
+  try{ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }catch(e){ toast("이 브라우저에서는 전체화면을 지원하지 않습니다"); }
+}
+let adminPin="", adminTab="log", adminDraft=null, adminRecs=null, adminMaint=null, adminCar="", adminEditRow=null, adminEditMaint=null;
 function post(d){ return fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)}).then(r=>r.json()); }
-function openAdmin(){ view="admin"; adminPin=""; adminDraft=null; adminRecs=null; adminTab="cars"; render(); }
+function loadingCard(){ return `<div class="card empty" style="margin-top:12px">불러오는 중...</div>`; }
+function openAdmin(){ view="admin"; adminPin=""; adminDraft=null; adminRecs=null; adminMaint=null; adminTab="log"; adminCar=""; adminEditRow=null; adminEditMaint=null; adminOn={}; adminPrefill=null; render(); }
 function adminView(){
   if(!adminPin) return adminGate();
-  if(!adminDraft) adminDraft={cars:CARS.map(c=>({n:c.n,p:c.p||""})), drivers:[...DRIVERS]};
-  const tabs=[["cars","🚗 차량"],["drivers","👤 운전자"],["recs","📋 기록·출력"]];
-  const body = adminTab==="cars" ? adminCars() : adminTab==="drivers" ? adminDrivers() : adminRecsView();
-  $("#app").innerHTML = `<button class="back" onclick="goHome()">← 돌아가기</button>
+  if(!adminDraft) adminDraft={cars:CARS.map(c=>({n:c.n,p:c.p||"",d:c.d||""})), drivers:[...DRIVERS]};
+  const tabs=[["log","📋 운행일지"],["print","🖨 일지 인쇄"],["maint","🔧 정비기록"],["cfg","🚗 차량·운전자"]];
+  const body = adminTab==="log" ? adminLogView() : adminTab==="print" ? adminPrintView() : adminTab==="maint" ? adminMaintView() : adminCfgView();
+  $("#app").innerHTML = `<div class="topbar"><button class="back" onclick="goHome()">← 돌아가기</button><button class="back" onclick="toggleFull()">⛶ 전체화면</button></div>
   <div class="head"><h1>관리자<span>화면</span></h1></div>
-  <div class="opts" style="flex-wrap:wrap">${tabs.map(([k,l])=>`<button class="${adminTab===k?'on':''}" style="flex:1 1 30%" onclick="adminGo('${k}')">${l}</button>`).join("")}</div>
-  ${body}${FOOT}`;
+  <div class="adm"><nav class="side">${tabs.map(([k,l])=>`<button class="${adminTab===k?'on':''}" onclick="adminGo('${k}')">${l}</button>`).join("")}</nav>
+  <section class="cont">${body}</section></div>
+  ${FOOT}`;
 }
 function adminGate(){
   $("#app").innerHTML = `<button class="back" onclick="goHome()">← 돌아가기</button>
-  <div class="head"><h1>관리자<span>화면</span></h1></div>
+  <div class="gate"><div class="head" style="text-align:center"><h1>관리자<span>화면</span></h1></div>
   <div class="card"><b style="font-size:calc(17px * var(--k))">관리자 번호를 입력하세요</b>
   <p class="lbl" style="margin-top:6px;line-height:1.6">처음 접속할 때 입력한 번호가 관리자 번호로 저장됩니다. 지회 직원에게는 알리지 마세요.</p>
   <input type="password" id="pinIn" inputmode="numeric" placeholder="숫자 4~8자리">
-  <div class="err" id="err"></div><button class="main" id="pinBtn" onclick="adminEnter()">확인</button></div>${FOOT}`;
+  <div class="err" id="err"></div><button class="main" id="pinBtn" onclick="adminEnter()">확인</button></div></div>${FOOT}`;
 }
 async function adminEnter(){
   const p=$("#pinIn").value.trim(), err=$("#err"), btn=$("#pinBtn");
@@ -373,24 +460,363 @@ async function adminEnter(){
   try{
     const j=await post({action:"admin_check", pin:p});
     if(!j.ok) throw new Error(j.error);
-    adminPin=p; render();
+    adminPin=p; adminGo("log");
   }catch(e){ err.textContent=e.message||"연결에 실패했습니다. 인터넷 연결을 확인해 주세요."; btn.disabled=false; btn.textContent="확인"; }
 }
-function adminGo(k){ adminTab=k; if(k==="recs" && adminRecs===null) adminLoadRecs(); render(); }
-function adminDel(kind,i){ adminDraft[kind].splice(i,1); render(); }
-function adminCars(){
-  return `<div class="card">${adminDraft.cars.map((c,i)=>`<div class="arow"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
-  <button class="main pu" onclick="adminDraft.cars.push({n:'',p:''});render()">+ 차량 추가</button>
-  <button class="main g" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div></div>`;
+function adminGo(k){
+  adminTab=k; adminEditRow=null; adminEditMaint=null;
+  if((k==="log"||k==="print") && adminRecs===null){ render(); return adminLoad("records"); }
+  if(k==="maint" && adminMaint===null){ render(); return adminLoad("maint"); }
+  render();
 }
-function adminDrivers(){
-  return `<div class="card">${adminDraft.drivers.map((n,i)=>`<div class="arow1"><input value="${esc(n)}" placeholder="이름" oninput="adminDraft.drivers[${i}]=this.value"><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}
+async function adminLoad(kind){
+  try{
+    if(kind==="records"){ const j=await (await fetch(GAS_URL+"?action=records")).json(); adminRecs=j.records||[]; adminPrintCfg=j.printCfg||defPrintCfg(); }
+    else { const j=await (await fetch(GAS_URL+"?action=maint_list")).json(); adminMaint=j.records||[]; }
+  }catch(e){ if(kind==="records") adminRecs=[]; else adminMaint=[]; }
+  if(view==="admin") render();
+}
+function carSelect(all){
+  return `<select class="carsel" onchange="adminCar=this.value;adminEditRow=null;adminEditMaint=null;render()">${all?'<option value="">전체 차량</option>':''}${CARS.map(c=>`<option value="${esc(c.n)}" ${adminCar===c.n?'selected':''}>${esc(c.n)}</option>`).join("")}</select>`;
+}
+
+/* 운행일지: 목록 + 수정·삭제 */
+function missingCard(){
+  const miss=adminRecs.filter(r=>r.flag && (!adminCar||r.car===adminCar));
+  if(!miss.length) return `<div class="card" style="margin-top:0"><b>⚠️ 누락 의심 기록</b><p class="lbl" style="margin-top:6px">없습니다. 계기판이 모두 맞습니다.</p></div>`;
+  return `<div class="card" style="margin-top:0"><b>⚠️ 누락 의심 기록 (${miss.length}건)</b>
+  <p class="lbl" style="margin-top:6px;line-height:1.6">직전 도착 계기판과 출발 계기판이 다릅니다. 그 사이에 운행이 기록되지 않았을 수 있습니다.</p>
+  <table class="tb"><tr><th>날짜</th><th>차량</th><th>직전 도착</th><th>출발</th><th>차이(km)</th><th></th></tr>
+  ${miss.map(r=>{ const diff=Number(r.diff); const can = diff>0 && r.prev!==''; return `<tr class="flag"><td>${esc(r.m)}/${esc(r.d)}</td><td>${esc(r.car)}</td><td>${esc(r.prev)}</td><td>${esc(r.odoS)}</td><td>${esc(r.diff)}</td><td>${can?`<button class="mini" onclick="fillMissing(${r.rowNo})">구간 기록 추가</button>`:'<span class="lbl">확인 필요</span>'}</td></tr>`; }).join("")}</table></div>`;
+}
+function fillMissing(rowNo){
+  const r=adminRecs.find(x=>x.rowNo===rowNo); if(!r) return;
+  const sv=+r.prev, ev=+r.odoS;
+  adminPrefill={car:r.car, m:r.m, d:r.d, odoS:String(r.prev), odoE:String(r.odoS), dist:(ev>sv?String(ev-sv):""), dest:"⚠️ 미확인 운행 (확인 필요)"};
+  adminEditRow="new"; render();
+}
+function adminLogView(){
+  if(adminRecs===null) return loadingCard();
+  const labelOf={}; CARS.forEach(c=>carPages(c).forEach(pg=>pg.rows.forEach(r=>{ labelOf[r.rowNo]=pg.label; })));
+  const rows=adminRecs.filter(r=>!adminCar||r.car===adminCar).slice().reverse();
+  const list=`${missingCard()}<div class="card">${carSelect(true)}
+  <button class="main g" onclick="logNew()">➕ 기록 추가</button>
+  <button class="main pu" onclick="adminLoad('records')">↻ 새로고침</button>
+  <div class="scroll"><table class="tb wide"><tr><th>월/일</th><th>쪽</th><th>차량</th><th>운전자</th><th>탑승</th><th>행선지</th><th>목적</th><th>출발</th><th>도착</th><th>출발km</th><th>도착km</th><th>거리</th><th>차량정비·주유</th><th>잔유량</th><th></th></tr>
+  ${rows.map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.m)}/${esc(r.d)}</td><td>${esc(labelOf[r.rowNo]||'-')}</td><td>${esc(r.car)}</td><td>${esc(r.driver)}</td><td>${esc(r.people)}</td><td>${esc(r.dest)}</td><td>${esc(r.purpose)}</td><td>${esc(r.st)}</td><td>${esc(r.en)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td><td>${esc(r.fix)}</td><td>${esc(r.gauge)}</td><td><button class="mini" onclick="logEdit(${r.rowNo})">수정</button></td></tr>`).join("")||'<tr><td colspan="15">기록이 없습니다</td></tr>'}
+  </table></div></div>`;
+  if(adminEditRow===null) return `<div>${list}</div>`;
+  return `<div class="split"><div>${list}</div><div>${logEditForm()}</div></div>`;
+}
+function logEdit(rowNo){ adminEditRow=rowNo; render(); }
+function logNew(){ adminEditRow="new"; render(); }
+function logEditForm(){
+  const isNew = adminEditRow==="new", now=new Date(); const pf=adminPrefill; adminPrefill=null;
+  const r = isNew
+    ? Object.assign({rowNo:"new", car:(adminCar && adminCar!=="__ALL__") ? adminCar : (CARS[0]?CARS[0].n:""), m:now.getMonth()+1, d:now.getDate(), driver:DRIVERS[0]||"", people:1, dest:"", purpose:"업무", st:"", en:"", odoS:"", odoE:"", dist:"", fix:"", gauge:""}, pf||{})
+    : adminRecs.find(x=>x.rowNo===adminEditRow);
+  if(!r){ adminEditRow=null; return `<div class="card empty" style="margin-top:0">기록을 찾을 수 없습니다. 새로고침 해 주세요.</div>`; }
+  const dr = (!r.driver || DRIVERS.includes(r.driver)) ? DRIVERS : [r.driver, ...DRIVERS];
+  const carOpts = CARS.map(c=>`<option ${c.n===r.car?'selected':''}>${esc(c.n)}</option>`).join("");
+  if(isNew) setTimeout(kmCheck,0);
+  return `<div class="card"><b style="font-size:calc(17px * var(--k))">${isNew?'➕ 기록 추가':'기록 수정 · '+esc(r.car)+' · '+esc(r.m)+'/'+esc(r.d)}</b>
+  <div class="fgrid">
+  <label>차량${isNew?`<select id="f_car" onchange="kmCheck()">${carOpts}</select>`:`<input value="${esc(r.car)}" readonly>`}</label>
+  <label>월<input id="f_m" type="number" min="1" max="12" value="${esc(r.m)}" ${isNew?'oninput="kmCheck()"':''}></label>
+  <label>일<input id="f_d" type="number" min="1" max="31" value="${esc(r.d)}" ${isNew?'oninput="kmCheck()"':''}></label>
+  <label>운전자<select id="f_driver">${dr.map(n=>`<option ${n===r.driver?'selected':''}>${esc(n)}</option>`).join("")}</select></label>
+  <label>탑승인원<input id="f_people" type="number" min="1" value="${esc(r.people)}"></label>
+  <label>행선지<input id="f_dest" value="${esc(r.dest)}"></label>
+  <label>목적<input id="f_purpose" value="${esc(r.purpose)}"></label>
+  <label>출발 시간<input id="f_st" value="${esc(r.st)}" placeholder="15:40" ${isNew?'oninput="kmCheck()"':''}></label>
+  <label>도착 시간<input id="f_en" value="${esc(r.en)}" placeholder="16:10"></label>
+  <label>출발 계기판(km)<input id="f_odoS" type="number" value="${esc(r.odoS)}" oninput="calcDist();kmCheck()"></label>
+  <label>도착 계기판(km)<input id="f_odoE" type="number" value="${esc(r.odoE)}" oninput="calcDist()"></label>
+  <label>운행거리(km)<input id="f_dist" value="${esc(r.dist)}" readonly></label>
+  <label>차량정비·주유<input id="f_fix" value="${esc(r.fix)}"></label>
+  <label>잔유량<input id="f_gauge" value="${esc(r.gauge)}"></label>
+  </div>
+  ${isNew?'<div class="kmbox" id="kmBox"></div>':''}
+  <div class="err" id="err"></div>
+  <button class="main g" onclick="logSave(${isNew?"'new'":r.rowNo})">💾 ${isNew?'추가':'저장'}</button>
+  ${isNew?'':`<button class="main" style="background:#b42318" onclick="logDelete(${r.rowNo})">🗑 이 기록 삭제</button>`}
+  <button class="main" style="background:#888" onclick="adminEditRow=null;render()">취소</button></div>`;
+}
+const pad2 = n => String(n).padStart(2,"0");
+// 같은 차량에서 이 날짜·시간 직전의 기록 (없으면 null)
+function prevRecOf(car,m,d,st){
+  const nk = pad2(m||0)+pad2(d||0)+(st||"00:00");
+  let best=null, bk="";
+  adminRecs.forEach(r=>{
+    if(r.car!==car) return;
+    const k = pad2(r.m)+pad2(r.d)+(r.st||"00:00");
+    if(k<=nk && (best===null || k>=bk)){ best=r; bk=k; }
+  });
+  return best;
+}
+function kmCheck(){
+  const box=$("#kmBox"); if(!box) return;
+  const car=$("#f_car").value, m=$("#f_m").value, d=$("#f_d").value, st=$("#f_st").value.trim(), odoS=$("#f_odoS").value.trim();
+  const prev=prevRecOf(car,m,d,st);
+  let msg = (!prev || !prev.odoE) ? "이 차량의 직전 기록이 없습니다." : `직전 도착 <b>${Number(prev.odoE).toLocaleString()}km</b> (${esc(prev.m)}/${esc(prev.d)} ${esc(prev.en)} · ${esc(prev.driver)})`;
+  if(prev && prev.odoE && odoS){
+    const diff = +odoS - Number(prev.odoE);
+    msg += diff===0 ? " → ✅ 출발 계기판이 일치합니다"
+         : diff>0 ? ` → ⚠️ <b>${diff.toLocaleString()}km 차이</b> (그 사이 운행이 기록되지 않았을 수 있습니다)`
+         : ` → ❌ 직전보다 ${(-diff).toLocaleString()}km 적습니다`;
+  }
+  const all = CARS.map(c=>{ const x=prevRecOf(c.n,12,31,"23:59"); return `${esc(c.n)} ${x&&x.odoE?Number(x.odoE).toLocaleString():'-'}km`; }).join(" · ");
+  box.innerHTML = `${msg}<div class="lbl" style="margin-top:6px">차량별 마지막 km: ${all}</div>`;
+}
+function calcDist(){
+  const s=+$("#f_odoS").value, e=+$("#f_odoE").value;
+  $("#f_dist").value = (s && e && e>s) ? String(e-s) : "";
+}
+async function logSave(key){
+  const isNew = key==="new", rowNo = isNew ? null : Number(key);
+  const r = isNew ? null : adminRecs.find(x=>x.rowNo===rowNo);
+  const err=$("#err"); err.textContent="";
+  const car = isNew ? $("#f_car").value : r.car;
+  const v={m:$("#f_m").value.trim(), d:$("#f_d").value.trim(), driver:$("#f_driver").value, people:$("#f_people").value.trim(), dest:$("#f_dest").value.trim(), purpose:$("#f_purpose").value.trim(), st:$("#f_st").value.trim(), en:$("#f_en").value.trim(), odoS:$("#f_odoS").value.trim(), odoE:$("#f_odoE").value.trim(), fix:$("#f_fix").value.trim(), gauge:$("#f_gauge").value.trim()};
+  if(!(+v.m>=1 && +v.m<=12) || !(+v.d>=1 && +v.d<=31)) return err.textContent="월과 일을 바르게 입력해 주세요.";
+  if(!v.people || +v.people<1) return err.textContent="탑승인원을 입력해 주세요.";
+  if(!v.dest) return err.textContent="행선지를 입력해 주세요.";
+  if(v.odoS && v.odoE && +v.odoE<=+v.odoS) return err.textContent="도착 계기판은 출발 계기판보다 커야 합니다.";
+  if(isNew && v.odoS){
+    const prev=prevRecOf(car,v.m,v.d,v.st);
+    if(prev && prev.odoE){
+      const diff=+v.odoS-Number(prev.odoE);
+      if(diff!==0 && !confirm(`직전 도착 계기판과 ${Math.abs(diff).toLocaleString()}km ${diff>0?'차이가 있습니다 (사이 운행 누락 가능).':'적습니다.'}\n그대로 추가할까요?`)) return;
+    }
+  }
+  const dist = (v.odoS && v.odoE) ? String(+v.odoE-+v.odoS) : "";
+  const values=[v.m,v.d,v.driver,v.people,v.dest,v.purpose,v.st,v.en,v.odoS,v.odoE,dist,v.fix,v.gauge];
+  try{
+    const j = isNew ? await post({action:"log_add", pin:adminPin, car, values})
+                    : await post({action:"log_update", pin:adminPin, rowNo, car, values});
+    if(!j.ok) throw new Error(j.error);
+    adminEditRow=null; toast(isNew?"추가되었습니다":"수정되었습니다"); await adminLoad("records");
+  }catch(e){ err.textContent=e.message||"저장에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
+}
+async function logDelete(rowNo){
+  if(!confirm("이 운행 기록을 삭제할까요? 되돌릴 수 없습니다.")) return;
+  const r=adminRecs.find(x=>x.rowNo===rowNo), err=$("#err");
+  try{
+    const j=await post({action:"log_delete", pin:adminPin, rowNo, car:r.car});
+    if(!j.ok) throw new Error(j.error);
+    adminEditRow=null; toast("삭제되었습니다"); await adminLoad("records");
+  }catch(e){ if(err) err.textContent=e.message||"삭제에 실패했습니다."; }
+}
+
+/* 인쇄: 차량별, 한 페이지 20줄 + 결재 라인 + 하단 기관명 */
+let adminPrintCfg=null, adminPrintDraft=null;
+function defPrintCfg(){ return {org:"", signCount:3, sign:[{t:"과장",n:""},{t:"부장",n:""},{t:"사무처장",n:""}]}; }
+function ensurePrintDraft(){ if(!adminPrintDraft) adminPrintDraft=JSON.parse(JSON.stringify(adminPrintCfg||defPrintCfg())); }
+function setSignCount(n){
+  ensurePrintDraft(); const d=adminPrintDraft; n=+n; d.signCount=n;
+  while(d.sign.length<n) d.sign.unshift({t:"담당",n:""});
+  while(d.sign.length>n) d.sign.shift();
+  render();
+}
+function printSetCard(){
+  ensurePrintDraft(); const d=adminPrintDraft;
+  return `<div class="card"><b style="font-size:calc(17px * var(--k))">✍️ 결재 라인</b>
+  <div class="signrow">
+    <select class="cnt" onchange="setSignCount(this.value)">${[2,3,4].map(n=>`<option value="${n}" ${d.signCount==n?'selected':''}>${n}명</option>`).join("")}</select>
+    ${d.sign.map((x,i)=>`<input class="tt" value="${esc(x.t)}" placeholder="직책" oninput="adminPrintDraft.sign[${i}].t=this.value">`).join("")}
+  </div>
+  <div class="err" id="err"></div>
+  <button class="main g" onclick="savePrintCfg()">💾 결재 라인 저장</button></div>`;
+}
+async function savePrintCfg(){
+  const err=$("#err"); err.textContent=""; ensurePrintDraft(); const d=adminPrintDraft;
+  const cfg={org:(d.org||"").trim(), signCount:d.signCount, sign:d.sign.map(x=>({t:(x.t||"").trim(),n:(x.n||"").trim()}))};
+  try{
+    const j=await post({action:"save_print", pin:adminPin, cfg});
+    if(!j.ok) throw new Error(j.error);
+    adminPrintCfg=cfg; adminPrintDraft=null; toast("저장되었습니다"); render();
+  }catch(e){ err.textContent=e.message||"저장에 실패했습니다."; }
+}
+function printCarSelect(){
+  return `<select class="carsel" onchange="adminCar=this.value;render()"><option value="__ALL__" ${adminCar==='__ALL__'?'selected':''}>전체 차량 (차량마다 새 페이지)</option>${CARS.map(c=>`<option value="${esc(c.n)}" ${adminCar===c.n?'selected':''}>${esc(c.n)}</option>`).join("")}</select>`;
+}
+/* 차량별 쪽 나누기: 기록의 저장 연도별로 나누고, 연도마다 01부터 20줄씩 번호를 붙입니다 */
+function carPages(c){
+  const rows=adminRecs.filter(r=>r.car===c.n);
+  const byYear={};
+  rows.forEach(r=>{
+    const y = /^\d{4}/.test(r.saved||"") ? r.saved.slice(0,4) : String(new Date().getFullYear());
+    (byYear[y]=byYear[y]||[]).push(r);
+  });
+  const pages=[];
+  Object.keys(byYear).sort().forEach(y=>{
+    const yr=byYear[y];
+    for(let i=0;i<yr.length;i+=20){
+      pages.push({label:`${y}-${String(Math.floor(i/20)+1).padStart(2,"0")}`, rows:yr.slice(i,i+20)});
+    }
+  });
+  if(!pages.length) pages.push({label:`${new Date().getFullYear()}-01`, rows:[]});
+  return pages;
+}
+function printPages(){
+  const pa=document.getElementById("printArea"); if(!pa) return;
+  const host=document.createElement("div"); host.id="printHost"; host.innerHTML=pa.innerHTML;
+  document.body.appendChild(host);
+  window.print();
+  host.remove();
+}
+function pageHtml(c,page,pc,sign){
+  return `<div class="pg">
+  <div class="ph"><div class="phl"><div class="pt">차량운행 및 정비일지</div><div class="pcar">차량번호 ${esc(c.p)} · 차종 ${esc(c.n)}</div></div>${sign}</div>
+  <div class="pno">NO. ${esc(page.label)}</div>
+  <table class="pt2"><tr><th rowspan="2">월</th><th rowspan="2">일</th><th rowspan="2">운전자</th><th rowspan="2">탑승<br>인원</th><th rowspan="2">행선지</th><th rowspan="2">목적</th><th colspan="2">운행시간</th><th colspan="3">운행거리(km)</th><th rowspan="2">차량정비·주유</th><th rowspan="2">잔유량</th></tr>
+  <tr><th>출발</th><th>도착</th><th>출발</th><th>도착</th><th>주행거리</th></tr>
+  ${page.rows.map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.m)}</td><td>${esc(r.d)}</td><td>${esc(r.driver)}</td><td>${esc(r.people)}</td><td>${esc(r.dest)}</td><td>${esc(r.purpose)}</td><td>${esc(r.st)}</td><td>${esc(r.en)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td><td>${esc(r.fix)}</td><td>${esc(r.gauge)}</td></tr>`).join("")}
+  ${Array.from({length:Math.max(0,20-page.rows.length)}).map(()=>`<tr class="blank"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`).join("")}
+  </table></div>`;
+}
+let adminPrefill=null, adminOn={};
+function pageKey(car,label){ return car+"|"+label; }
+function togglePage(key){ adminOn[key]=!adminOn[key]; render(); }
+function setAllPages(on){
+  adminOn={};
+  if(on) CARS.forEach(c=>{ if(!adminCar || adminCar==="__ALL__" || adminCar===c.n) carPages(c).forEach(pg=>{ adminOn[pageKey(c.n,pg.label)]=true; }); });
+  render();
+}
+function selList(targets){
+  const sel=[];
+  targets.forEach(c=>carPages(c).forEach(pg=>{ if(adminOn[pageKey(c.n,pg.label)]) sel.push(`${esc(c.n)} ${esc(pg.label)}`); }));
+  return sel.length ? sel.join(" · ") : '<span class="lbl">아직 고른 쪽이 없습니다</span>';
+}
+function pagePicker(targets){
+  const blocks=targets.map(c=>{
+    const pages=carPages(c);
+    if(!pages.length) return "";
+    const on=pages.filter(pg=>adminOn[pageKey(c.n,pg.label)]).length;
+    return `<details class="pkd"><summary><b>${esc(c.n)}</b> <span class="lbl">${on} / ${pages.length}쪽 선택 (펼쳐서 고르기)</span></summary>
+      <div class="pkl">${pages.map(pg=>{ const k=pageKey(c.n,pg.label); return `<label class="pk"><input type="checkbox" ${adminOn[k]?'checked':''} onchange="togglePage('${esc(k)}')"> <b>${esc(pg.label)}</b> <span class="lbl">(${pg.rows.length}줄)</span></label>`; }).join("")}</div></details>`;
+  }).join("");
+  return blocks || '<p class="lbl">인쇄할 기록이 없습니다.</p>';
+}
+function adminPrintView(){
+  if(adminRecs===null) return loadingCard();
+  if(!adminCar && CARS.length) adminCar="__ALL__";
+  const pc=adminPrintDraft || adminPrintCfg || defPrintCfg();
+  const sign=`<table class="sg"><tr>${pc.sign.map(x=>`<th>${esc(x.t)}</th>`).join("")}</tr><tr>${pc.sign.map(()=>`<td class="sgn"></td>`).join("")}</tr></table>`;
+  const isAll = adminCar==="__ALL__";
+  const targets = isAll ? CARS : CARS.filter(x=>x.n===adminCar);
+  let html="", picked=0;
+  targets.forEach(c=>{
+    const pages=carPages(c).filter(pg=>adminOn[pageKey(c.n,pg.label)]);
+    if(isAll && !pages.length) return;
+    if(!carPages(c).length && !isAll) pages.push({label:`${new Date().getFullYear()}-01`, rows:[]});
+    picked+=pages.length;
+    html += pages.map(pg=>pageHtml(c,pg,pc,sign)).join("");
+  });
+  const status = CARS.map(c=>{
+    const pages=carPages(c);
+    const n=pages.reduce((k,pg)=>k+pg.rows.length,0);
+    const last = pages.length ? pages[pages.length-1].rows.length : 0;
+    const left = last===0 ? 20 : (last%20===0 ? 0 : 20-(last%20));
+    return `<tr><td>${esc(c.n)}</td><td>${n}줄</td><td>${pages.length}쪽</td><td>${left===0?'✅ 20줄 완성 (인쇄 가능)':'다음 쪽까지 '+left+'줄'}</td></tr>`;
+  }).join("");
+  const vlist = (()=>{ const sel=[]; targets.forEach(c=>carPages(c).forEach(pg=>{ if(adminOn[pageKey(c.n,pg.label)]) sel.push(`<div class="selrow">${esc(c.n)} · <b>${esc(pg.label)}</b> <span class="lbl">(${pg.rows.length}줄)</span></div>`); })); return sel.length ? sel.join("") : '<p class="lbl">아직 고른 쪽이 없습니다. 왼쪽에서 쪽을 체크해 주세요.</p>'; })();
+  return `<div class="noprint">${printSetCard()}</div>
+  <div class="pcols noprint">
+    <div class="card">
+      ${printCarSelect()}
+      <div style="margin-top:14px"><b>인쇄할 쪽 고르기</b> <button class="mini" onclick="setAllPages(true)">전체 선택</button> <button class="mini" onclick="setAllPages(false)">전체 해제</button></div>
+      ${pagePicker(targets)}
+    </div>
+    <div class="card">
+      <b>선택된 쪽 (${picked})</b>
+      <div class="selbox">${vlist}</div>
+      <button class="main pu" onclick="printPages()">🖨 선택한 ${picked}쪽 인쇄 / PDF 저장</button>
+      <p class="lbl" style="margin-top:8px;line-height:1.6">번호는 기록의 저장 연도 기준으로 붙고, 연도가 바뀌면 01부터 다시 시작합니다. 노란색 행은 계기판 차이가 있는 기록입니다. 인쇄 창에서 "배경 그래픽"을 켜 주세요.</p>
+    </div>
+  </div>
+  <div class="card noprint"><b>차량별 현황</b>
+  <table class="tb"><tr><th>차량</th><th>기록</th><th>쪽 수</th><th>상태</th></tr>${status}</table></div>
+  <div id="printArea">${html}</div>`;
+}
+
+/* 정비기록: 하나의 목록, 차량으로 구분 */
+function adminMaintView(){
+  if(adminMaint===null) return loadingCard();
+  if(adminEditMaint!==null) return maintForm();
+  const rows=adminMaint.filter(m=>!adminCar||m.car===adminCar);
+  const targets=(adminCar && adminCar!=="__ALL__") ? CARS.filter(x=>x.n===adminCar) : CARS;
+  const defCar = adminCar || (CARS[0]?CARS[0].n:"");
+  return `<div class="card noprint">${carSelect(true)}
+  <button class="main g" onclick="adminEditMaint={id:'',car:'${esc(defCar)}',date:'',kind:'',shop:'',who:'',cost:'',memo:''};render()">+ 정비 기록 추가</button>
+  <table class="tb"><tr><th>차량</th><th>일시</th><th>구분</th><th>정비소</th><th>담당</th><th>비용</th><th>내용</th><th></th></tr>
+  ${rows.map(m=>`<tr><td>${esc(m.car)}</td><td>${esc(m.date)}</td><td>${esc(m.kind)}</td><td>${esc(m.shop)}</td><td>${esc(m.who)}</td><td>${esc(m.cost)}</td><td>${esc(m.memo)}</td><td><button class="mini" onclick="maintEdit('${esc(m.id)}')">수정</button></td></tr>`).join("")||'<tr><td colspan="8">정비 기록이 없습니다</td></tr>'}
+  </table>
+  <button class="main pu" onclick="printPages()">🖨 목록 인쇄</button></div>
+  <div id="printArea">${mPrintHtml(targets)}</div>`;
+}
+function mPrintHtml(targets){
+  return targets.map(c=>{
+    const rows=adminMaint.filter(m=>m.car===c.n);
+    return `<div class="mpage"><div class="mhead">차량정비 관리대장</div>
+    <table class="minfo"><tr><td style="width:30%">차종: <b>${esc(c.n)}</b></td><td style="width:40%">차량번호: <b>${esc(c.p)}</b></td><td>구입일: ${c.d?esc(c.d):'______________'}</td></tr></table>
+    <table class="mtb"><tr><th>구분</th><th>일시</th><th>정비소</th><th>담당</th><th>비용</th><th>비고</th></tr>
+    ${rows.map(m=>`<tr><td>${esc(m.kind)}</td><td>${esc(m.date)}</td><td>${esc(m.shop)}</td><td>${esc(m.who)}</td><td>${esc(m.cost)}</td><td>${esc(m.memo)}</td></tr>`).join("")}
+    </table></div>`;
+  }).join("");
+}
+function maintEdit(id){ adminEditMaint=adminMaint.find(m=>m.id===id)||null; render(); }
+function maintForm(){
+  const m=adminEditMaint, isNew=!m.id;
+  return `<div class="card"><b style="font-size:calc(17px * var(--k))">${isNew?'정비 기록 추가':'정비 기록 수정'}</b>
+  <div class="fgrid">
+  <label>차량<select id="m_car">${CARS.map(c=>`<option ${c.n===m.car?'selected':''}>${esc(c.n)}</option>`).join("")}</select></label>
+  <label>일시<input id="m_date" type="date" value="${esc(m.date)}"></label>
+  <label>구분<input id="m_kind" value="${esc(m.kind)}" placeholder="엔진오일, 타이어 등"></label>
+  <label>정비소<input id="m_shop" value="${esc(m.shop)}"></label>
+  <label>담당<input id="m_who" value="${esc(m.who)}"></label>
+  <label>비용(원)<input id="m_cost" value="${esc(m.cost)}"></label>
+  <label style="grid-column:1/-1">내용·비고<textarea id="m_memo" rows="3">${esc(m.memo)}</textarea></label>
+  </div><div class="err" id="err"></div>
+  <button class="main g" onclick="maintSave()">💾 저장</button>
+  ${isNew?'':`<button class="main" style="background:#b42318" onclick="maintDelete()">🗑 이 기록 삭제</button>`}
+  <button class="main" style="background:#888" onclick="adminEditMaint=null;render()">취소</button></div>`;
+}
+async function maintSave(){
+  const err=$("#err"); err.textContent="";
+  const rec={id:adminEditMaint.id, car:$("#m_car").value, date:$("#m_date").value, kind:$("#m_kind").value.trim(), shop:$("#m_shop").value.trim(), who:$("#m_who").value.trim(), cost:$("#m_cost").value.trim(), memo:$("#m_memo").value.trim()};
+  if(!rec.date) return err.textContent="일시를 입력해 주세요.";
+  if(!rec.kind) return err.textContent="구분을 입력해 주세요.";
+  try{
+    const j=await post({action:"maint_save", pin:adminPin, rec});
+    if(!j.ok) throw new Error(j.error);
+    adminEditMaint=null; toast("저장되었습니다"); await adminLoad("maint");
+  }catch(e){ err.textContent=e.message||"저장에 실패했습니다."; }
+}
+async function maintDelete(){
+  if(!confirm("이 정비 기록을 삭제할까요?")) return;
+  const err=$("#err");
+  try{
+    const j=await post({action:"maint_delete", pin:adminPin, id:adminEditMaint.id});
+    if(!j.ok) throw new Error(j.error);
+    adminEditMaint=null; toast("삭제되었습니다"); await adminLoad("maint");
+  }catch(e){ if(err) err.textContent=e.message||"삭제에 실패했습니다."; }
+}
+
+/* 차량·운전자 목록 */
+function adminCfgView(){
+  return `<div class="card"><button class="main g" style="margin-top:0" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div><b>🚗 차량</b>
+  ${adminDraft.cars.map((c,i)=>`<div class="arow"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
+  <button class="main pu" onclick="adminDraft.cars.push({n:'',p:'',d:''});render()">+ 차량 추가</button>
+  <b style="display:block;margin-top:18px">👤 운전자</b>
+  ${adminDraft.drivers.map((n,i)=>`<div class="arow1"><input value="${esc(n)}" placeholder="이름" oninput="adminDraft.drivers[${i}]=this.value"><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}
   <button class="main pu" onclick="adminDraft.drivers.push('');render()">+ 운전자 추가</button>
-  <button class="main g" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div></div>`;
+  </div>`;
 }
+function adminDel(kind,i){ adminDraft[kind].splice(i,1); render(); }
 async function adminSave(){
   const err=$("#err"); err.textContent="";
-  const cars=adminDraft.cars.map(c=>({n:(c.n||"").trim(),p:(c.p||"").trim()})).filter(c=>c.n);
+  const cars=adminDraft.cars.map(c=>({n:(c.n||"").trim(),p:(c.p||"").trim(),d:(c.d||"").trim()})).filter(c=>c.n);
   const drivers=adminDraft.drivers.map(s=>(s||"").trim()).filter(Boolean);
   if(!cars.length) return err.textContent="차량을 한 대 이상 입력해 주세요.";
   if(!drivers.length) return err.textContent="운전자를 한 명 이상 입력해 주세요.";
@@ -399,18 +825,6 @@ async function adminSave(){
     if(!j.ok) throw new Error(j.error);
     adminDraft=null; await loadResv(); toast("저장되었습니다"); render();
   }catch(e){ err.textContent=e.message||"저장에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
-}
-async function adminLoadRecs(){
-  try{ const j=await (await fetch(GAS_URL+"?action=records")).json(); adminRecs=j.records||[]; }
-  catch(e){ adminRecs=[]; }
-  if(view==="admin") render();
-}
-function adminRecsView(){
-  if(adminRecs===null) return `<div class="card empty" style="margin-top:12px">불러오는 중...</div>`;
-  const rows=adminRecs.slice().reverse().map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.md)}</td><td>${esc(r.st)}~${esc(r.en)}</td><td>${esc(r.car)}</td><td>${esc(r.driver)}</td><td>${esc(r.dest)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td></tr>`).join("");
-  return `<div class="card"><button class="main pu noprint" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
-  <p class="lbl noprint" style="margin-top:8px">노란색 행은 출발 계기판이 직전 도착 계기판과 다른 기록입니다.</p>
-  <div id="printArea"><table class="tb"><tr><th>날짜</th><th>시간</th><th>차량</th><th>운전자</th><th>행선지</th><th>출발km</th><th>도착km</th><th>거리</th></tr>${rows||'<tr><td colspan="8">기록이 없습니다</td></tr>'}</table></div></div>`;
 }
 
 /* ---------- 기관 연결 ---------- */
