@@ -91,6 +91,14 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .edit{background:#e9edff;color:#3b5bdb;padding:3px 10px;font-size:calc(12px * var(--k));font-weight:700;border-radius:8px;margin-left:8px}
 .x{background:#fee2e2;color:#b91c1c;padding:6px 10px;font-size:calc(12px * var(--k));font-weight:700;border-radius:10px}
 .toast{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:#2f9e5f;color:#fff;padding:18px 28px;border-radius:16px;font-size:calc(18px * var(--k));font-weight:800;display:none;z-index:9;box-shadow:0 6px 20px #0004}
+.arow{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:8px}
+.arow1{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px}
+.arow input,.arow1 input,#pinIn{font-size:calc(16px * var(--k));margin-top:0}
+.arow button,.arow1 button{padding:8px 12px;background:#fdeaea;color:#b42318;font-weight:700;border-radius:8px;font-size:calc(14px * var(--k))}
+.tb{width:100%;border-collapse:collapse;font-size:calc(14px * var(--k));margin-top:12px}
+.tb td,.tb th{border-bottom:1px solid #ddd;padding:6px 4px;text-align:left}
+.tb tr.flag td{background:#fff3cd}
+@media print{ body *{visibility:hidden} #printArea,#printArea *{visibility:visible} #printArea{position:absolute;left:0;top:0;width:100%} .noprint{display:none} }
 </style>
 </head>
 <body>
@@ -159,13 +167,14 @@ async function loadResv(){
       if(driver && !DRIVERS.includes(driver)){ driver=null; localStorage.removeItem("driver"); car=null; view="home"; }
     }
   }catch(e){ cfgFail=true; }
-  if(view==="connect") return;
+  if(view==="connect"||view==="admin") return;
   if(!driver) pickDriver(); else if(view==="home" && !car) home();
 }
 
 function render(){
   if(!GAS_URL) return connectView();
   if(view==="connect") return connectView();
+  if(view==="admin") return adminView();
   if(!driver) return pickDriver();
   if(!car) return home();
   tripOf(car) ? arrive() : depart();
@@ -334,8 +343,78 @@ async function save(){
   }catch(x){ err.textContent="저장에 실패했습니다. 인터넷 연결과 GAS 주소를 확인하고 다시 눌러 주세요."; btn.disabled=false; btn.textContent="💾 저장"; }
 }
 
+
+/* ---------- 관리자 (PC에서 차량·운전자 관리 및 기록 출력) ---------- */
+let adminPin = "", adminTab = "cars", adminDraft = null, adminRecs = null;
+function post(d){ return fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)}).then(r=>r.json()); }
+function openAdmin(){ view="admin"; adminPin=""; adminDraft=null; adminRecs=null; adminTab="cars"; render(); }
+function adminView(){
+  if(!adminPin) return adminGate();
+  if(!adminDraft) adminDraft={cars:CARS.map(c=>({n:c.n,p:c.p||""})), drivers:[...DRIVERS]};
+  const tabs=[["cars","🚗 차량"],["drivers","👤 운전자"],["recs","📋 기록·출력"]];
+  const body = adminTab==="cars" ? adminCars() : adminTab==="drivers" ? adminDrivers() : adminRecsView();
+  $("#app").innerHTML = `<button class="back" onclick="goHome()">← 돌아가기</button>
+  <div class="head"><h1>관리자<span>화면</span></h1></div>
+  <div class="opts" style="flex-wrap:wrap">${tabs.map(([k,l])=>`<button class="${adminTab===k?'on':''}" style="flex:1 1 30%" onclick="adminGo('${k}')">${l}</button>`).join("")}</div>
+  ${body}${FOOT}`;
+}
+function adminGate(){
+  $("#app").innerHTML = `<button class="back" onclick="goHome()">← 돌아가기</button>
+  <div class="head"><h1>관리자<span>화면</span></h1></div>
+  <div class="card"><b style="font-size:calc(17px * var(--k))">관리자 번호를 입력하세요</b>
+  <p class="lbl" style="margin-top:6px;line-height:1.6">처음 접속할 때 입력한 번호가 관리자 번호로 저장됩니다. 지회 직원에게는 알리지 마세요.</p>
+  <input type="password" id="pinIn" inputmode="numeric" placeholder="숫자 4~8자리">
+  <div class="err" id="err"></div><button class="main" id="pinBtn" onclick="adminEnter()">확인</button></div>${FOOT}`;
+}
+async function adminEnter(){
+  const p=$("#pinIn").value.trim(), err=$("#err"), btn=$("#pinBtn");
+  if(!/^\d{4,8}$/.test(p)) return err.textContent="숫자 4~8자리를 입력해 주세요.";
+  err.textContent=""; btn.disabled=true; btn.textContent="확인 중...";
+  try{
+    const j=await post({action:"admin_check", pin:p});
+    if(!j.ok) throw new Error(j.error);
+    adminPin=p; render();
+  }catch(e){ err.textContent=e.message||"연결에 실패했습니다. 인터넷 연결을 확인해 주세요."; btn.disabled=false; btn.textContent="확인"; }
+}
+function adminGo(k){ adminTab=k; if(k==="recs" && adminRecs===null) adminLoadRecs(); render(); }
+function adminDel(kind,i){ adminDraft[kind].splice(i,1); render(); }
+function adminCars(){
+  return `<div class="card">${adminDraft.cars.map((c,i)=>`<div class="arow"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
+  <button class="main pu" onclick="adminDraft.cars.push({n:'',p:''});render()">+ 차량 추가</button>
+  <button class="main g" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div></div>`;
+}
+function adminDrivers(){
+  return `<div class="card">${adminDraft.drivers.map((n,i)=>`<div class="arow1"><input value="${esc(n)}" placeholder="이름" oninput="adminDraft.drivers[${i}]=this.value"><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}
+  <button class="main pu" onclick="adminDraft.drivers.push('');render()">+ 운전자 추가</button>
+  <button class="main g" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div></div>`;
+}
+async function adminSave(){
+  const err=$("#err"); err.textContent="";
+  const cars=adminDraft.cars.map(c=>({n:(c.n||"").trim(),p:(c.p||"").trim()})).filter(c=>c.n);
+  const drivers=adminDraft.drivers.map(s=>(s||"").trim()).filter(Boolean);
+  if(!cars.length) return err.textContent="차량을 한 대 이상 입력해 주세요.";
+  if(!drivers.length) return err.textContent="운전자를 한 명 이상 입력해 주세요.";
+  try{
+    const j=await post({action:"save_cfg", pin:adminPin, cars, drivers});
+    if(!j.ok) throw new Error(j.error);
+    adminDraft=null; await loadResv(); toast("저장되었습니다"); render();
+  }catch(e){ err.textContent=e.message||"저장에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
+}
+async function adminLoadRecs(){
+  try{ const j=await (await fetch(GAS_URL+"?action=records")).json(); adminRecs=j.records||[]; }
+  catch(e){ adminRecs=[]; }
+  if(view==="admin") render();
+}
+function adminRecsView(){
+  if(adminRecs===null) return `<div class="card empty" style="margin-top:12px">불러오는 중...</div>`;
+  const rows=adminRecs.slice().reverse().map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.md)}</td><td>${esc(r.st)}~${esc(r.en)}</td><td>${esc(r.car)}</td><td>${esc(r.driver)}</td><td>${esc(r.dest)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td></tr>`).join("");
+  return `<div class="card"><button class="main pu noprint" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
+  <p class="lbl noprint" style="margin-top:8px">노란색 행은 출발 계기판이 직전 도착 계기판과 다른 기록입니다.</p>
+  <div id="printArea"><table class="tb"><tr><th>날짜</th><th>시간</th><th>차량</th><th>운전자</th><th>행선지</th><th>출발km</th><th>도착km</th><th>거리</th></tr>${rows||'<tr><td colspan="8">기록이 없습니다</td></tr>'}</table></div></div>`;
+}
+
 /* ---------- 기관 연결 ---------- */
-const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button></div>`;
+const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button> <button class="back" style="color:#aaa" onclick="openAdmin()">🔐 관리자</button></div>`;
 function clearCaches(){
   Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","recent","driver","trips","active"].includes(k)) localStorage.removeItem(k); });
   driver=null; car=null; fuelMap={}; recent={}; active={}; recentReady=false; applyCfg([],[]); cfgReady=false; cfgFail=false;
