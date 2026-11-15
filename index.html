@@ -56,6 +56,16 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .guide.open .gbody{display:block}
 .guide .gbody p{margin-top:14px;font-size:calc(19px * var(--k))}
 .guide .gbody b{font-size:calc(21px * var(--k))}
+.gbar{display:inline-flex;gap:2px;vertical-align:middle;flex-wrap:nowrap}
+.gbar i{display:block;width:7px;height:14px;border-radius:2px;background:#ebe8e2;border:1px solid #d6d1c8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.gbar i.f.g{background:#2f9e5f;border-color:#2f9e5f}.gbar i.f.y{background:#f59e0b;border-color:#f59e0b}.gbar i.f.r{background:#dc2626;border-color:#dc2626}
+.pt2 .gbar i{width:5px;height:12px}
+.gsub{margin-top:14px;border-top:1px solid #eee;padding-top:10px}
+.gsub summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:calc(19px * var(--k))}
+.gsub summary::-webkit-details-marker{display:none}
+.gsub summary i{font-style:normal;transition:transform .25s;color:#888}
+.gsub[open] summary i{transform:rotate(180deg)}
+.gsub p{margin-top:8px}
 .big label{font-size:calc(24px * var(--k));margin:26px 0 10px}
 .big h2{font-size:calc(26.67px * var(--k))}
 .big .lbl{font-size:calc(18px * var(--k))}
@@ -115,7 +125,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .sechd{display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px}
 .sechd b{font-size:15px}
 .addbtn{padding:5px 12px;background:#f1edff;color:#6d3bd8;font-weight:700;border-radius:20px;font-size:12px;border:1.5px solid #d9d0fa;white-space:nowrap}
-.arow.cfgcar{grid-template-columns:1fr 1fr 1fr auto auto;align-items:center;margin-top:6px}
+.arow.cfgcar{grid-template-columns:1fr 1fr 1fr 96px auto auto;align-items:center;margin-top:6px}
 .cfgcar input{padding:8px 12px;font-size:14px;border-radius:11px;margin-top:0}
 .cfgcar button{padding:6px 12px;font-size:12px;border-radius:9px}
 .drvgrid{gap:8px}
@@ -256,18 +266,29 @@ const GAUGE_N = 10; // 연료 게이지 칸 수
 { const c=ls.get("cfg",null);
   applyCfg(c?c.cars:[], c?c.drivers:[]); }
 let cfgReady = !!ls.get("cfg",null), cfgFail = false;
-// 저장된 게이지 값(예: "7/10칸", 예전 기록 "6/12칸")을 10칸 기준 칸 수로 바꿉니다
-function gaugeLvl(g){
+// 차량마다 기름칸 수를 다르게 쓸 수 있습니다 (차량 설정, 기본 10칸)
+function cellsOf(c){ const x=(CARS.find(v=>v.n===c)||(ALLCFG&&ALLCFG.cars.find(v=>v.n===c))||{}); return x.g||GAUGE_N; }
+// 저장된 값 "7/10칸"을 칸 수(k)와 전체 칸 수(N)로 풀어 줍니다. 예전 값("가득", "3/4" 등)도 읽습니다.
+function gaugeInfo(g,N){
   const m=(g||"").match(/^(\d+)\/(\d+)/);
-  if(m) return Math.min(GAUGE_N, Math.round(+m[1]*GAUGE_N/+m[2]));
-  return ({"가득":GAUGE_N,"3/4":8,"1/2":5,"1/4":3,"거의 없음":1})[g]||0;
+  if(m){ const n=Math.min(20,Math.max(1,+m[2])), T=N||n; return {k:Math.min(T,Math.round(+m[1]*T/n)), N:T}; }
+  const f={"가득":1,"3/4":0.75,"1/2":0.5,"1/4":0.25,"거의 없음":0.1}[g];
+  const T=N||GAUGE_N;
+  return {k:f===undefined?0:Math.round(f*T), N:T};
+}
+// 운행일지·인쇄용 기름칸 그림
+function gaugeBar(g,N){
+  if(!g) return "";
+  const {k,N:T}=gaugeInfo(g,N), cls=k>=6?"g":k>=3?"y":"r";
+  let h=""; for(let i=0;i<T;i++) h+=`<i class="${i<k?'f '+cls:''}"></i>`;
+  return `<span class="gbar" title="${k}/${T}칸">${h}</span>`;
 }
 function fuelSvg(n){
-  const g=fuelMap[n], k=gaugeLvl(g);
+  const {k,N:T}=gaugeInfo(fuelMap[n], cellsOf(n));
   if(!k) return `<span style="color:#bbb">주유량 기록 없음</span>`;
   const col=k>=6?"#2f9e5f":k>=3?"#f59e0b":"#dc2626";
-  let cells=""; for(let i=0;i<GAUGE_N;i++) cells+=`<rect x="${i*7}" y="2" width="6" height="22" rx="1.5" fill="${i<k?col:'#ebe8e2'}"/>`;
-  return `<svg width="72" height="36" viewBox="0 0 72 36">${cells}<text x="0" y="34" font-size="9" fill="#aaa">E</text><text x="62" y="34" font-size="9" fill="#aaa">F</text></svg>`;
+  let cells=""; for(let i=0;i<T;i++) cells+=`<rect x="${i*7}" y="2" width="6" height="22" rx="1.5" fill="${i<k?col:'#ebe8e2'}"/>`;
+  return `<svg width="${T*7}" height="36" viewBox="0 0 ${T*7} 36">${cells}<text x="0" y="34" font-size="9" fill="#aaa">E</text><text x="${T*7-10}" y="34" font-size="9" fill="#aaa">F</text></svg>`;
 }
 const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 // 선택 차량의 직전 도착 계기판 (최신 기록 1건)
@@ -332,8 +353,8 @@ function home(){
   <div class="card row"><div><div class="lbl">오늘</div><div class="date">${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)</div></div><div class="dot"></div></div>
   <div class="card guide"><button class="gbtn" onclick="toggleGuide()"><span>사용 방법</span><i>▾</i></button>
   <div class="gbody">
-  <p><b>1. 출발할 때</b><br>차량 버튼을 누르고, 계기판 숫자를 확인한 뒤 🚀 출발을 누르세요. 숫자가 다르면 직접 고쳐 주세요.</p>
-  <p><b>2. 출발 기록을 안 했을 때</b><br>도착할 때 차량 버튼을 누르고 🚀 출발을 먼저 누르세요. 도착 화면에서 출발 옆 [수정]을 눌러 실제 출발 날짜·시간으로 맞춘 뒤, 도착 정보를 입력하고 저장하세요.</p>
+  <details class="gsub"><summary><b>1. 출발할 때</b> <i>▾</i></summary><p>차량 버튼을 누르고, 계기판 숫자를 확인한 뒤 🚀 출발을 누르세요. 숫자가 다르면 직접 고쳐 주세요.</p></details>
+  <details class="gsub"><summary><b>2. 출발 기록을 안 했을 때</b> <i>▾</i></summary><p>도착할 때 차량 버튼을 누르고 🚀 출발을 먼저 누르세요. 도착 화면에서 출발 옆 [수정]을 눌러 실제 출발 날짜·시간으로 맞춘 뒤, 도착 정보를 입력하고 저장하세요.</p></details>
   <p>운행 중인 차량은 "운행중" 표시가 보이며, 그 차량을 누르면 도착 화면이 열립니다.</p>
   </div></div>
   <div class="sec">차량 선택</div>
@@ -417,7 +438,7 @@ function arrive(){
   <div class="two"><input type="date" id="eD" value="${dStr(new Date())}" oninput="this.dataset.t='1'"><input type="time" id="eT" value="${tStr(new Date())}" oninput="this.dataset.t='1'"></div>
   <div class="lbl" style="margin-top:6px">수정하지 않으면 저장하는 시각이 자동 기록됩니다.</div>
   <label>⛽ 잔유량 <span class="lbl">(선택)</span></label>
-  <div class="gz">${Array.from({length:GAUGE_N},(_,i)=>`<button id="g${i}" onclick="setG(${i+1})"></button>`).join("")}</div><div class="lbl" id="gTxt" style="margin-top:6px">막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)</div>
+  <div class="gz" style="grid-template-columns:repeat(${cellsOf(car)},1fr)">${Array.from({length:cellsOf(car)},(_,i)=>`<button id="g${i}" onclick="setG(${i+1})"></button>`).join("")}</div><div class="lbl" id="gTxt" style="margin-top:6px">막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)</div>
   <div class="acc"><button class="acch" id="mh" onclick="toggleMemo()"><span>🔧 차량정비 및 주유 <small>(선택)</small></span><i>▾</i></button>
   <div class="accb"><input type="text" id="memo" placeholder="예: 엔진오일 교환, 휘발유 40L 60,000원"></div></div>
   <div class="err" id="err"></div><button class="main g" id="saveBtn" onclick="save()">💾 저장</button></div></div>`;
@@ -435,9 +456,10 @@ function editStart(){ $("#sEdit").classList.toggle("hide"); }
 function updStart(){ $("#sTxt").textContent = $("#sD").value+" "+$("#sT").value; }
 function setP(p){ purpose=p; $("#p1").classList.toggle("on",p==="업무"); $("#p2").classList.toggle("on",p==="통역"); }
 function setG(k){
-  gauge = gauge===k+"/"+GAUGE_N+"칸" ? "" : k+"/"+GAUGE_N+"칸";
+  const N=cellsOf(car);
+  gauge = gauge===k+"/"+N+"칸" ? "" : k+"/"+N+"칸";
   const kk = gauge?k:0, cls = k>=6?"on":k>=3?"ony":"onr";
-  for(let i=0;i<GAUGE_N;i++) $("#g"+i).className = i<kk?cls:"";
+  for(let i=0;i<N;i++) $("#g"+i).className = i<kk?cls:"";
 }
 function calc(){ const tr=tripOf(car), e=+$("#odoE").value; $("#dist").innerHTML = e>tr.odoS ? `<span style="font-size:calc(18px * var(--k));color:#999">운행거리</span><div style="font-size:calc(30px * var(--k));font-weight:800;color:#3b5bdb">${e-tr.odoS} km</div>` : ""; }
 
@@ -480,7 +502,7 @@ function loadingCard(){ return `<div class="card empty" style="margin-top:12px">
 function openAdmin(){ view="admin"; adminPin=""; adminDraft=null; adminRecs=null; adminMaint=null; adminTab="log"; adminCar=""; adminEditRow=null; adminEditMaint=null; adminOn={}; adminPrefill=null; render(); }
 function adminView(){
   if(!adminPin) return adminGate();
-  if(!adminDraft) adminDraft = ALLCFG ? {cars:ALLCFG.cars.map(c=>({...c})), drivers:ALLCFG.drivers.map(x=>({...x}))} : {cars:CARS.map(c=>({n:c.n,p:c.p||"",d:c.d||"",u:true})), drivers:DRIVERS.map(n=>({n,u:true}))};
+  if(!adminDraft) adminDraft = ALLCFG ? {cars:ALLCFG.cars.map(c=>({...c})), drivers:ALLCFG.drivers.map(x=>({...x}))} : {cars:CARS.map(c=>({n:c.n,p:c.p||"",d:c.d||"",g:c.g||10,u:true})), drivers:DRIVERS.map(n=>({n,u:true}))};
   const tabs=[["log","📋 운행일지"],["print","🖨 일지 인쇄"],["maint","🔧 정비기록"],["cfg","🚗 차량·운전자"],["pw","🔑 비밀번호"]];
   const body = adminTab==="log" ? adminLogView() : adminTab==="print" ? adminPrintView() : adminTab==="maint" ? adminMaintView() : adminTab==="pw" ? adminPwView() : adminCfgView();
   $("#app").innerHTML = `<div class="topbar"><button class="back" onclick="goHome()">← 돌아가기</button><button class="back" onclick="copyStaffLink()">🔗 직원용 링크 복사</button><button class="back" onclick="toggleFull()">⛶ 전체화면</button></div>
@@ -548,7 +570,7 @@ function adminLogView(){
   <div class="hbtns"><button class="addbtn" onclick="adminLoad('records')">↻ 새로고침</button><button class="btn-save" onclick="logNew()">➕ 기록 추가</button></div></div>
   <div class="sechd"><b>🚗 차량</b>${carSelect(true)}</div>
   <div class="scroll"><table class="tb wide"><tr><th>월/일</th><th>쪽</th><th>차량</th><th>운전자</th><th>탑승</th><th>행선지</th><th>목적</th><th>출발</th><th>도착</th><th>출발km</th><th>도착km</th><th>거리</th><th>차량정비·주유</th><th>잔유량</th><th></th></tr>
-  ${rows.map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.m)}/${esc(r.d)}</td><td>${esc(labelOf[r.rowNo]||'-')}</td><td>${esc(r.car)}</td><td>${esc(r.driver)}</td><td>${esc(r.people)}</td><td>${esc(r.dest)}</td><td>${esc(r.purpose)}</td><td>${esc(r.st)}</td><td>${esc(r.en)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td><td>${esc(r.fix)}</td><td>${esc(r.gauge)}</td><td><button class="mini" onclick="logEdit(${r.rowNo})">수정</button></td></tr>`).join("")||'<tr><td colspan="15">기록이 없습니다</td></tr>'}
+  ${rows.map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.m)}/${esc(r.d)}</td><td>${esc(labelOf[r.rowNo]||'-')}</td><td>${esc(r.car)}</td><td>${esc(r.driver)}</td><td>${esc(r.people)}</td><td>${esc(r.dest)}</td><td>${esc(r.purpose)}</td><td>${esc(r.st)}</td><td>${esc(r.en)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td><td>${esc(r.fix)}</td><td>${gaugeBar(r.gauge)}</td><td><button class="mini" onclick="logEdit(${r.rowNo})">수정</button></td></tr>`).join("")||'<tr><td colspan="15">기록이 없습니다</td></tr>'}
   </table></div></div>`;
   if(adminEditRow===null) return `<div>${list}</div>`;
   return `<div class="split"><div>${list}</div><div>${logEditForm()}</div></div>`;
@@ -745,7 +767,7 @@ function pageHtml(c,page,pc){
   <div class="pno">NO. ${esc(page.label)}</div>
   <table class="pt2"><tr><th rowspan="2">월</th><th rowspan="2">일</th><th rowspan="2">운전자</th><th rowspan="2">탑승<br>인원</th><th rowspan="2">행선지</th><th rowspan="2">목적</th><th colspan="2">운행시간</th><th colspan="3">운행거리(km)</th><th rowspan="2">차량정비·주유</th><th rowspan="2">잔유량</th></tr>
   <tr><th>출발</th><th>도착</th><th>출발</th><th>도착</th><th>주행거리</th></tr>
-  ${page.rows.map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.m)}</td><td>${esc(r.d)}</td><td>${esc(r.driver)}</td><td>${esc(r.people)}</td><td>${esc(r.dest)}</td><td>${esc(r.purpose)}</td><td>${esc(r.st)}</td><td>${esc(r.en)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td><td>${esc(r.fix)}</td><td>${esc(r.gauge)}</td></tr>`).join("")}
+  ${page.rows.map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.m)}</td><td>${esc(r.d)}</td><td>${esc(r.driver)}</td><td>${esc(r.people)}</td><td>${esc(r.dest)}</td><td>${esc(r.purpose)}</td><td>${esc(r.st)}</td><td>${esc(r.en)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td><td>${esc(r.fix)}</td><td>${gaugeBar(r.gauge)}</td></tr>`).join("")}
   ${Array.from({length:Math.max(0,20-page.rows.length)}).map(()=>`<tr class="blank"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`).join("")}
   </table></div>`;
 }
@@ -884,8 +906,8 @@ function adminCfgView(){
     <button class="btn-save" onclick="adminSave()">💾 저장</button>
   </div>
   <div class="err" id="err"></div>
-  <div class="sechd"><b>🚗 차량</b><button class="addbtn" onclick="adminDraft.cars.push({n:'',p:'',d:'',u:true});render()">+ 차량 추가</button></div>
-  ${cars.map((c,i)=>`<div class="arow cfgcar"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><label class="useck"><input type="checkbox" ${c.u!==false?'checked':''} onchange="adminDraft.cars[${i}].u=this.checked"> 사용</label><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
+  <div class="sechd"><b>🚗 차량</b><button class="addbtn" onclick="adminDraft.cars.push({n:'',p:'',d:'',g:10,u:true});render()">+ 차량 추가</button></div>
+  ${cars.map((c,i)=>`<div class="arow cfgcar"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><input type="number" min="1" max="20" value="${c.g||10}" placeholder="기름칸" title="기름칸 수 (기본 10칸)" oninput="adminDraft.cars[${i}].g=this.value"><label class="useck"><input type="checkbox" ${c.u!==false?'checked':''} onchange="adminDraft.cars[${i}].u=this.checked"> 사용</label><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
   <div class="sechd"><b>👤 운전자</b><button class="addbtn" onclick="adminDraft.drivers.push({n:'',u:true});render()">+ 운전자 추가</button></div>
   <div class="drvgrid">${drivers.map((x,i)=>`<div class="drvcell"><input value="${esc(x.n)}" placeholder="이름" oninput="adminDraft.drivers[${i}].n=this.value"><label class="useck"><input type="checkbox" ${x.u!==false?'checked':''} onchange="adminDraft.drivers[${i}].u=this.checked"> 사용</label><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}</div>
   </div>`;
@@ -905,7 +927,7 @@ function adminPwView(){
 function adminDel(kind,i){ adminDraft[kind].splice(i,1); render(); }
 async function adminSave(){
   const err=$("#err"); err.textContent="";
-  const cars=adminDraft.cars.map(c=>({n:(c.n||"").trim(),p:(c.p||"").trim(),d:(c.d||"").trim(),u:c.u!==false})).filter(c=>c.n);
+  const cars=adminDraft.cars.map(c=>({n:(c.n||"").trim(),p:(c.p||"").trim(),d:(c.d||"").trim(),g:Math.min(20,Math.max(1,parseInt(c.g,10)||10)),u:c.u!==false})).filter(c=>c.n);
   const drivers=adminDraft.drivers.map(x=>({n:(x.n||"").trim(),u:x.u!==false})).filter(x=>x.n);
   if(!cars.some(c=>c.u)) return err.textContent="사용 중인 차량을 한 대 이상 체크해 주세요.";
   if(!drivers.some(x=>x.u)) return err.textContent="사용 중인 운전자를 한 명 이상 체크해 주세요.";
@@ -1004,10 +1026,10 @@ async function api(name){
         active[a.car]={driver:txt(a.driver), date:txt(a.start_date), time:txt(a.start_time), odoS:txt(a.odo_s), dest:txt(a.dest), purpose:txt(a.purpose), resId:""};
       });
       const allCars=(ck(await sb.from("cars").select("*").eq("chapter_id",CH).order("id"))||[])
-        .map(c=>({n:txt(c.name), p:txt(c.plate), d:txt(c.bought_on), u:c.in_use!==false}));
+        .map(c=>({n:txt(c.name), p:txt(c.plate), d:txt(c.bought_on), u:c.in_use!==false, g:Number(c.gauge_n)||10}));
       const allDrivers=(ck(await sb.from("drivers").select("*").eq("chapter_id",CH).order("id"))||[])
         .map(x=>({n:txt(x.name), u:x.in_use!==false}));
-      const cars=allCars.filter(c=>c.u).map(c=>({n:c.n, p:c.p, d:c.d}));
+      const cars=allCars.filter(c=>c.u).map(c=>({n:c.n, p:c.p, d:c.d, g:c.g}));
       const drivers=allDrivers.filter(x=>x.u).map(x=>x.n);
       return {ok:true, fuel, recent, active, cars, drivers, allCars, allDrivers};
     }
@@ -1101,7 +1123,7 @@ async function post(d){
     if(a==="save_cfg"){
       ck(await sb.from("cars").delete().eq("chapter_id",CH));
       ck(await sb.from("drivers").delete().eq("chapter_id",CH));
-      const cars=(d.cars||[]).filter(c=>c.n).map(c=>({chapter_id:CH, name:c.n, plate:c.p||"", in_use:c.u!==false, bought_on:c.d||""}));
+      const cars=(d.cars||[]).filter(c=>c.n).map(c=>({chapter_id:CH, name:c.n, plate:c.p||"", in_use:c.u!==false, bought_on:c.d||"", gauge_n:Math.min(20,Math.max(1,parseInt(c.g,10)||10))}));
       const drv=(d.drivers||[]).filter(x=>x.n).map(x=>({chapter_id:CH, name:x.n, in_use:x.u!==false}));
       if(cars.length) ck(await sb.from("cars").insert(cars));
       if(drv.length) ck(await sb.from("drivers").insert(drv));
