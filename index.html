@@ -194,6 +194,12 @@ body.pc .head{margin-bottom:6px}
 .signrow{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-top:12px}
 .signrow .cnt{width:120px;flex:0 0 120px;margin-top:0;font-size:calc(16px * var(--k))}
 .signrow .tt{flex:1 1 0;min-width:0;margin-top:0;font-size:calc(16px * var(--k))}
+.sigsel{width:auto;min-width:200px;margin:0;padding:8px 12px;font-size:14px;border-radius:11px}
+.pills{display:flex;gap:6px}
+.addbtn.on{background:#6d3bd8;color:#fff;border-color:#6d3bd8}
+.siggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:6px}
+.sigcell{display:flex;align-items:center;gap:6px;background:#f8f7f4;border-radius:12px;padding:6px 8px;margin:0}
+.sigcell input{padding:7px 9px;font-size:14px;border-radius:9px;margin:0;background:#fff;border-color:#e7e4de}
 .pkd{background:#fff;border:2px solid #e7e4de;border-radius:10px;margin-top:10px;padding:10px 14px}
 .pkd summary{cursor:pointer;font-size:16px;line-height:1.8}
 .pkl{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid #eee}
@@ -643,28 +649,59 @@ async function logDelete(rowNo){
 }
 
 /* 인쇄: 차량별, 한 페이지 20줄 + 결재 라인 + 하단 기관명 */
-let adminPrintCfg=null, adminPrintDraft=null;
-function defPrintCfg(){ return {org:"", signCount:3, sign:[{t:"과장",n:""},{t:"부장",n:""},{t:"사무처장",n:""}]}; }
-function ensurePrintDraft(){ if(!adminPrintDraft) adminPrintDraft=JSON.parse(JSON.stringify(adminPrintCfg||defPrintCfg())); }
+let adminPrintCfg=null, adminPrintDraft=null, adminSignCar="__DEFAULT__";
+function defPrintCfg(){ return {org:"", signCount:3, sign:[{t:"과장",n:""},{t:"부장",n:""},{t:"사무처장",n:""}], carSign:{}}; }
+function ensurePrintDraft(){
+  if(!adminPrintDraft) adminPrintDraft=JSON.parse(JSON.stringify(adminPrintCfg||defPrintCfg()));
+  if(!adminPrintDraft.carSign) adminPrintDraft.carSign={};
+}
+/* 차량별 결재 라인: 따로 정하지 않은 차량은 전체 기본을 씁니다 */
+function signOf(pc,car){ return (pc.carSign && pc.carSign[car]) || pc; }
+function signObj(d,key){
+  if(key==="__DEFAULT__") return d;
+  if(!d.carSign) d.carSign={};
+  if(!d.carSign[key]) d.carSign[key]=JSON.parse(JSON.stringify({signCount:d.signCount, sign:d.sign}));
+  return d.carSign[key];
+}
+function signTable(pc,car){
+  const s=signOf(pc,car);
+  return `<table class="sg"><tr>${s.sign.map(x=>`<th>${esc(x.t)}</th>`).join("")}</tr><tr>${s.sign.map(()=>`<td class="sgn"></td>`).join("")}</tr></table>`;
+}
+function setSignCar(v){ adminSignCar=v; render(); }
 function setSignCount(n){
-  ensurePrintDraft(); const d=adminPrintDraft; n=+n; d.signCount=n;
-  while(d.sign.length<n) d.sign.unshift({t:"담당",n:""});
-  while(d.sign.length>n) d.sign.shift();
+  ensurePrintDraft(); const o=signObj(adminPrintDraft, adminSignCar); n=+n; o.signCount=n;
+  while(o.sign.length<n) o.sign.unshift({t:"담당",n:""});
+  while(o.sign.length>n) o.sign.shift();
   render();
 }
+function setSignTitle(i,v){ ensurePrintDraft(); signObj(adminPrintDraft, adminSignCar).sign[i].t=v; }
+function resetCarSign(){ ensurePrintDraft(); delete adminPrintDraft.carSign[adminSignCar]; render(); }
 function printSetCard(){
   ensurePrintDraft(); const d=adminPrintDraft;
-  return `<div class="card"><b style="font-size:calc(17px * var(--k))">✍️ 결재 라인</b>
-  <div class="signrow">
-    <select class="cnt" onchange="setSignCount(this.value)">${[2,3,4].map(n=>`<option value="${n}" ${d.signCount==n?'selected':''}>${n}명</option>`).join("")}</select>
-    ${d.sign.map((x,i)=>`<input class="tt" value="${esc(x.t)}" placeholder="직책" oninput="adminPrintDraft.sign[${i}].t=this.value">`).join("")}
+  const cur = (adminSignCar!=="__DEFAULT__" && d.carSign[adminSignCar]) || d;
+  const isCustom = adminSignCar!=="__DEFAULT__" && !!d.carSign[adminSignCar];
+  const opts = `<option value="__DEFAULT__" ${adminSignCar==='__DEFAULT__'?'selected':''}>전체 기본</option>` +
+    CARS.map(c=>`<option value="${esc(c.n)}" ${adminSignCar===c.n?'selected':''}>${esc(c.n)}${d.carSign[c.n]?' · 따로 정함':''}</option>`).join("");
+  const counts = [2,3,4].map(n=>`<button class="addbtn ${cur.signCount==n?'on':''}" onclick="setSignCount(${n})">${n}명</button>`).join("");
+  const titles = cur.sign.map((x,i)=>`<label class="sigcell"><span class="lbl">${i+1}</span><input value="${esc(x.t)}" placeholder="직책" oninput="setSignTitle(${i},this.value)"></label>`).join("");
+  return `<div class="card cfgcard">
+  <div class="cfghead">
+    <div><b class="cfgttl">✍️ 결재 라인</b><div class="lbl cfgnote">차량마다 따로 정할 수 있습니다. 따로 정하지 않은 차량은 '전체 기본'을 씁니다.</div></div>
+    <button class="btn-save" onclick="savePrintCfg()">💾 저장</button>
   </div>
   <div class="err" id="err"></div>
-  <button class="main g" onclick="savePrintCfg()">💾 결재 라인 저장</button></div>`;
+  <div class="sechd"><b>🚗 대상</b><select class="carsel sigsel" onchange="setSignCar(this.value)">${opts}</select></div>
+  <div class="sechd"><b>결재자 인원</b><div class="pills">${counts}</div></div>
+  <div class="sechd"><b>결재 직책 (왼쪽부터)</b>${isCustom?`<button class="addbtn" onclick="resetCarSign()">기본값으로 되돌리기</button>`:""}</div>
+  <div class="siggrid">${titles}</div>
+  </div>`;
 }
 async function savePrintCfg(){
   const err=$("#err"); err.textContent=""; ensurePrintDraft(); const d=adminPrintDraft;
-  const cfg={org:(d.org||"").trim(), signCount:d.signCount, sign:d.sign.map(x=>({t:(x.t||"").trim(),n:(x.n||"").trim()}))};
+  const norm=o=>({signCount:o.signCount, sign:o.sign.map(x=>({t:(x.t||"").trim(),n:(x.n||"").trim()}))});
+  const carSign={};
+  Object.keys(d.carSign).forEach(k=>{ if(CARS.some(c=>c.n===k)) carSign[k]=norm(d.carSign[k]); });
+  const cfg={org:(d.org||"").trim(), ...norm(d), carSign};
   try{
     const j=await post({action:"save_print", pin:adminPin, cfg});
     if(!j.ok) throw new Error(j.error);
@@ -699,9 +736,9 @@ function printPages(){
   window.print();
   host.remove();
 }
-function pageHtml(c,page,pc,sign){
+function pageHtml(c,page,pc){
   return `<div class="pg">
-  <div class="ph"><div class="phl"><div class="pt">차량운행 및 정비일지</div><div class="pcar">차량번호 ${esc(c.p)} · 차종 ${esc(c.n)}</div></div>${sign}</div>
+  <div class="ph"><div class="phl"><div class="pt">차량운행 및 정비일지</div><div class="pcar">차량번호 ${esc(c.p)} · 차종 ${esc(c.n)}</div></div>${signTable(pc,c.n)}</div>
   <div class="pno">NO. ${esc(page.label)}</div>
   <table class="pt2"><tr><th rowspan="2">월</th><th rowspan="2">일</th><th rowspan="2">운전자</th><th rowspan="2">탑승<br>인원</th><th rowspan="2">행선지</th><th rowspan="2">목적</th><th colspan="2">운행시간</th><th colspan="3">운행거리(km)</th><th rowspan="2">차량정비·주유</th><th rowspan="2">잔유량</th></tr>
   <tr><th>출발</th><th>도착</th><th>출발</th><th>도착</th><th>주행거리</th></tr>
@@ -736,7 +773,6 @@ function adminPrintView(){
   if(adminRecs===null) return loadingCard();
   if(!adminCar && CARS.length) adminCar="__ALL__";
   const pc=adminPrintDraft || adminPrintCfg || defPrintCfg();
-  const sign=`<table class="sg"><tr>${pc.sign.map(x=>`<th>${esc(x.t)}</th>`).join("")}</tr><tr>${pc.sign.map(()=>`<td class="sgn"></td>`).join("")}</tr></table>`;
   const isAll = adminCar==="__ALL__";
   const targets = isAll ? CARS : CARS.filter(x=>x.n===adminCar);
   let html="", picked=0;
@@ -745,7 +781,7 @@ function adminPrintView(){
     if(isAll && !pages.length) return;
     if(!carPages(c).length && !isAll) pages.push({label:`${new Date().getFullYear()}-01`, rows:[]});
     picked+=pages.length;
-    html += pages.map(pg=>pageHtml(c,pg,pc,sign)).join("");
+    html += pages.map(pg=>pageHtml(c,pg,pc)).join("");
   });
   const status = CARS.map(c=>{
     const pages=carPages(c);
