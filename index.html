@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>차량운행일지</title>
+<link rel="icon" type="image/jpeg" href="/icon.jpg">
+<link rel="apple-touch-icon" href="/icon.jpg">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3b5bdb">
+<meta name="apple-mobile-web-app-title" content="운행일지">
 <style>
 *{box-sizing:border-box;margin:0}
 :root{--k:1}
@@ -186,10 +191,13 @@ body.pc .head{margin-bottom:6px}
 <div id="app"></div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ===== 기관 연결: 앱 첫 화면에서 GAS 주소를 입력합니다 (코드 수정 불필요) ===== */
-let GAS_URL = "";
-// 차량·운전자 목록은 구글시트의 "차량", "운전자" 탭에서 불러옵니다 (코드 수정 불필요)
+/* ===== Supabase 연결 정보 (anon 공개 키만 넣습니다. service_role 키는 넣지 마세요) ===== */
+const SB_URL = "https://hxldwxvdxnkyygzfyiwx.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4bGR3eHZkeG5reXlnemZ5aXd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDQ5NjIsImV4cCI6MjA4OTU4MDk2Mn0.cSv6iNUEVSNERvxZFUAbqFs4d9SizhY-8O63sHfepFQ";
+const sb = supabase.createClient(SB_URL, SB_KEY);
+let SESSION = null, CH = null, ROLE = null;  // SESSION: 로그인 상태, CH: 이 지회 번호
 const PALETTE = [{c:"#3b5bdb",bg:"#eaeefd"},{c:"#3d8361",bg:"#e8f3ee"},{c:"#b5622e",bg:"#faeee4"},{c:"#7239d8",bg:"#f1edff"},{c:"#d6336c",bg:"#fdeaf1"},{c:"#0c8599",bg:"#e3f6f9"}];
 let DRIVERS = [], CARS = [];
 function applyCfg(cars,drivers){ CARS=cars.map((x,i)=>({...x,...PALETTE[i%PALETTE.length]})); DRIVERS=drivers; }
@@ -234,9 +242,9 @@ function toggleGuide(){ document.querySelector(".guide").classList.toggle("open"
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",1400)}
 
 async function loadResv(){
-  if(!GAS_URL) return;
+  if(!SESSION) return;
   try{
-    const r = await fetch(GAS_URL+"?action=list"); const j = await r.json();
+    const j = await api("list");
     if(j.ok && j.fuel){ fuelMap=j.fuel; ls.set("fuelMap",fuelMap); }
     if(j.ok && j.recent){ recent=j.recent; ls.set("recent",recent); recentReady=true; }
     if(j.ok && j.active){ active=j.active; ls.set("active",active); const t=trips(); Object.keys(t).forEach(k=>{ if(!active[k]) delete t[k]; }); ls.set("trips",t); }
@@ -254,8 +262,8 @@ async function loadResv(){
 
 function render(){
   document.body.classList.toggle("pc", view==="admin");
-  if(!GAS_URL) return connectView();
-  if(view==="connect") return connectView();
+  if(!SESSION) return loginView();
+  if(view==="pw") return pwView();
   if(view==="admin") return adminView();
   if(!driver) return pickDriver();
   if(!car) return home();
@@ -267,13 +275,13 @@ function goHome(){ car=null; view="home"; render(); }
 function pickDriver(){
   $("#app").innerHTML = `<div class="head"><h1>차량<span>운행</span>일지</h1></div>
   <div class="card"><b style="font-size:calc(17px * var(--k))">운전자를 선택하세요</b><p class="lbl" style="margin-top:6px">한 번 선택하면 이 기기에 저장됩니다.</p>
-  ${driverBox()}</div>${FOOT}`;
+  ${driverBox()}</div>${footHtml()}`;
 }
 function driverBox(){
   if(DRIVERS.length) return `<div class="opts" style="flex-wrap:wrap;margin-top:12px">${DRIVERS.map(n=>`<button style="flex:1 1 45%" onclick="setDriver('${n}')">👤 ${n}</button>`).join("")}</div>`;
-  if(cfgFail && !cfgReady) return `<div class="empty" style="margin-top:12px">목록을 불러오지 못했습니다.<br>인터넷 연결과 GAS 주소를 확인해 주세요.</div>`;
+  if(cfgFail && !cfgReady) return `<div class="empty" style="margin-top:12px">목록을 불러오지 못했습니다.<br>인터넷 연결을 확인해 주세요.</div>`;
   if(!cfgReady) return `<div class="empty" style="margin-top:12px">불러오는 중...</div>`;
-  return `<div class="empty" style="margin-top:12px">시트에서 이름을 설정해 주세요.</div>`;
+  return `<div class="empty" style="margin-top:12px">관리자 화면에서 운전자를 등록해 주세요.</div>`;
 }
 function setDriver(n){ driver=n; ls.set("driver",n); goHome(); }
 function changeDriver(){ driver=null; render(); }
@@ -292,10 +300,10 @@ function home(){
   <p>운행 중인 차량은 "운행중" 표시가 보이며, 그 차량을 누르면 도착 화면이 열립니다.</p>
   </div></div>
   <div class="sec">차량 선택</div>
-  ${CARS.length||!cfgReady?"":`<div class="empty">시트의 "차량" 탭에 차량을 등록해 주세요.</div>`}<div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
+  ${CARS.length||!cfgReady?"":`<div class="empty">관리자 화면에서 차량을 등록해 주세요.</div>`}<div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
     <div class="ic" style="background:${c.bg}">${svgCar(c.c)}</div><div class="pl" style="color:${c.c}">${c.p}</div><div class="nm">${c.n}</div>
     <div class="fz">${fuelSvg(c.n)}</div><div class="st">${tripOf(c.n)?'운행중 · '+esc(tripOf(c.n).driver):''}</div></button>`).join("")}</div>
-  ${FOOT}`;
+  ${footHtml()}`;
 }
 function pickCar(v){ car=v; view="trip"; render(); loadResv(); }
 
@@ -337,7 +345,7 @@ async function doDepart(){
   const tr={driver, odoS:o, date:dStr(n), time:tStr(n), dest:"", purpose:"업무", resId:""};
   err.textContent=""; 
   try{
-    const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"depart", car, driver:tr.driver, odoStart:o, date:tr.date, time:tr.time, dest:tr.dest, purpose:tr.purpose, resId:tr.resId})})).json();
+    const j=await post({action:"depart", car, driver:tr.driver, odoStart:o, date:tr.date, time:tr.time, dest:tr.dest, purpose:tr.purpose, resId:tr.resId});
     if(!j.ok) return err.textContent=j.error||"출발 등록에 실패했습니다.";
   }catch(x){ return err.textContent="출발 등록에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
   const t=trips(); t[car]=tr; ls.set("trips",t);
@@ -414,7 +422,7 @@ async function save(){
     driver:tr.driver, car, dest, people:ppl, purpose, startDate:sD, startTime:sT, endTime:eT,
     odoStart:tr.odoS, odoEnd:e, distance:e-tr.odoS, fuel:"", fix:$("#memo").value.trim(), gauge, resId:tr.resId||""};
   try{
-    const j=await (await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)})).json();
+    const j=await post(data);
     if(!j.ok) throw new Error(j.error||"fail");
     const t=trips(); delete t[car]; ls.set("trips",t); delete active[car]; ls.set("active",active);
     // 방금 저장한 기록을 기기 안의 최근 기록 맨 앞에 넣어 둡니다 (다음 출발 때 바로 반영)
@@ -422,7 +430,7 @@ async function save(){
     ls.set("recent",recent);
     if(gauge){ fuelMap[car]=gauge; ls.set("fuelMap",fuelMap); }
     toast("저장되었습니다"); setTimeout(goHome,1400);
-  }catch(x){ err.textContent="저장에 실패했습니다. 인터넷 연결과 GAS 주소를 확인하고 다시 눌러 주세요."; btn.disabled=false; btn.textContent="💾 저장"; }
+  }catch(x){ err.textContent="저장에 실패했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요."; btn.disabled=false; btn.textContent="💾 저장"; }
 }
 
 
@@ -431,7 +439,6 @@ function toggleFull(){
   try{ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }catch(e){ toast("이 브라우저에서는 전체화면을 지원하지 않습니다"); }
 }
 let adminPin="", adminTab="log", adminDraft=null, adminRecs=null, adminMaint=null, adminCar="", adminEditRow=null, adminEditMaint=null;
-function post(d){ return fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)}).then(r=>r.json()); }
 function loadingCard(){ return `<div class="card empty" style="margin-top:12px">불러오는 중...</div>`; }
 function openAdmin(){ view="admin"; adminPin=""; adminDraft=null; adminRecs=null; adminMaint=null; adminTab="log"; adminCar=""; adminEditRow=null; adminEditMaint=null; adminOn={}; adminPrefill=null; render(); }
 function adminView(){
@@ -439,11 +446,11 @@ function adminView(){
   if(!adminDraft) adminDraft={cars:CARS.map(c=>({n:c.n,p:c.p||"",d:c.d||""})), drivers:[...DRIVERS]};
   const tabs=[["log","📋 운행일지"],["print","🖨 일지 인쇄"],["maint","🔧 정비기록"],["cfg","🚗 차량·운전자"]];
   const body = adminTab==="log" ? adminLogView() : adminTab==="print" ? adminPrintView() : adminTab==="maint" ? adminMaintView() : adminCfgView();
-  $("#app").innerHTML = `<div class="topbar"><button class="back" onclick="goHome()">← 돌아가기</button><button class="back" onclick="toggleFull()">⛶ 전체화면</button></div>
+  $("#app").innerHTML = `<div class="topbar"><button class="back" onclick="goHome()">← 돌아가기</button><button class="back" onclick="copyStaffLink()">🔗 직원용 링크 복사</button><button class="back" onclick="toggleFull()">⛶ 전체화면</button></div>
   <div class="head"><h1>관리자<span>화면</span></h1></div>
   <div class="adm"><nav class="side">${tabs.map(([k,l])=>`<button class="${adminTab===k?'on':''}" onclick="adminGo('${k}')">${l}</button>`).join("")}</nav>
   <section class="cont">${body}</section></div>
-  ${FOOT}`;
+  ${footHtml()}`;
 }
 function adminGate(){
   $("#app").innerHTML = `<button class="back" onclick="goHome()">← 돌아가기</button>
@@ -451,7 +458,7 @@ function adminGate(){
   <div class="card"><b style="font-size:calc(17px * var(--k))">관리자 번호를 입력하세요</b>
   <p class="lbl" style="margin-top:6px;line-height:1.6">처음 접속할 때 입력한 번호가 관리자 번호로 저장됩니다. 지회 직원에게는 알리지 마세요.</p>
   <input type="password" id="pinIn" inputmode="numeric" placeholder="숫자 4~8자리">
-  <div class="err" id="err"></div><button class="main" id="pinBtn" onclick="adminEnter()">확인</button></div></div>${FOOT}`;
+  <div class="err" id="err"></div><button class="main" id="pinBtn" onclick="adminEnter()">확인</button></div></div>${footHtml()}`;
 }
 async function adminEnter(){
   const p=$("#pinIn").value.trim(), err=$("#err"), btn=$("#pinBtn");
@@ -471,8 +478,8 @@ function adminGo(k){
 }
 async function adminLoad(kind){
   try{
-    if(kind==="records"){ const j=await (await fetch(GAS_URL+"?action=records")).json(); adminRecs=j.records||[]; adminPrintCfg=j.printCfg||defPrintCfg(); }
-    else { const j=await (await fetch(GAS_URL+"?action=maint_list")).json(); adminMaint=j.records||[]; }
+    if(kind==="records"){ const j=await api("records"); adminRecs=j.records||[]; adminPrintCfg=j.printCfg||defPrintCfg(); }
+    else { const j=await api("maint_list"); adminMaint=j.records||[]; }
   }catch(e){ if(kind==="records") adminRecs=[]; else adminMaint=[]; }
   if(view==="admin") render();
 }
@@ -827,46 +834,257 @@ async function adminSave(){
   }catch(e){ err.textContent=e.message||"저장에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
 }
 
-/* ---------- 기관 연결 ---------- */
-const FOOT = `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openConnect()">⚙ 기관 연결 설정</button> <button class="back" style="color:#aaa" onclick="openAdmin()">🔐 관리자</button></div>`;
+/* ---------- 로그인 · 로그아웃 ---------- */
 function clearCaches(){
   Object.keys(localStorage).forEach(k=>{ if(["cfg","fuelMap","recent","driver","trips","active"].includes(k)) localStorage.removeItem(k); });
   driver=null; car=null; fuelMap={}; recent={}; active={}; recentReady=false; applyCfg([],[]); cfgReady=false; cfgFail=false;
 }
-function setGas(u){ if(u!==ls.get("gas","")) clearCaches(); ls.set("gas",u); GAS_URL=u; }
-function openConnect(){ view="connect"; render(); }
-function shareLink(){ return location.href.split("?")[0].split("#")[0]+"?gas="+encodeURIComponent(GAS_URL); }
-function connectView(){
-  const has=!!GAS_URL;
-  $("#app").innerHTML = `${has?'<button class="back" onclick="goHome()">← 돌아가기</button>':''}
-  <div class="head"><h1>기관<span>연결</span></h1></div>
-  <div class="card"><b style="font-size:calc(17px * var(--k))">구글시트 연결 주소 입력</b>
-  <p class="lbl" style="margin-top:6px;line-height:1.6">기관별로 만든 Apps Script 웹 앱 URL을 한 번만 입력하면 이 기기에 저장됩니다.</p>
-  <input type="text" id="gasIn" placeholder="https://script.google.com/macros/s/.../exec" value="${GAS_URL}" style="margin-top:12px;font-size:calc(14px * var(--k))">
-  <div class="err" id="err"></div><button class="main" id="gasBtn" onclick="connect()">연결하기</button></div>
-  ${has?`<div class="card"><b style="font-size:calc(17px * var(--k))">직원용 접속 링크</b>
-  <p class="lbl" style="margin-top:6px;line-height:1.6">이 링크로 접속하면 주소 입력 없이 바로 연결됩니다. 직원들에게 공유하세요.</p>
-  <button class="main pu" onclick="copyLink()">🔗 링크 복사</button></div>`:''}`;
+// 지회 아이디는 영문·숫자로 만듭니다 (예: gangneung). 실제 메일을 보내지 않는 내부 주소로 바꿔서 사용합니다.
+const LOGIN_DOMAIN = "@gwdeaf.local";
+function loginView(){
+  $("#app").innerHTML = `<div class="head"><h1>차량<span>운행</span>일지</h1></div>
+  <div class="card"><b style="font-size:calc(17px * var(--k))">지회 로그인</b>
+  <p class="lbl" style="margin-top:6px;line-height:1.6">지회 아이디와 비밀번호로 한 번 로그인하면 이 기기에 계속 저장됩니다.</p>
+  <label>지회 아이디</label><input type="text" id="lgId" autocapitalize="off" autocomplete="username">
+  <label>비밀번호</label><input type="password" id="lgPw" autocomplete="current-password">
+  <div class="err" id="err"></div><button class="main" id="lgBtn" onclick="doLogin()">로그인</button></div>`;
 }
-async function connect(){
-  const u=$("#gasIn").value.trim(), err=$("#err"), btn=$("#gasBtn");
-  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) return err.textContent="주소가 올바르지 않습니다. https://script.google.com/.../exec 형태여야 합니다.";
-  err.textContent=""; btn.disabled=true; btn.textContent="연결 확인 중...";
-  try{
-    const j=await (await fetch(u+"?action=list")).json();
-    if(!j.ok) throw new Error("x");
-    setGas(u); view="home"; car=null; render(); loadResv();
-  }catch(e){ err.textContent="연결에 실패했습니다. 웹 앱 배포(액세스: 모든 사용자)와 주소를 확인해 주세요."; btn.disabled=false; btn.textContent="연결하기"; }
+async function doLogin(){
+  const id=$("#lgId").value.trim(), pw=$("#lgPw").value, err=$("#err"), btn=$("#lgBtn");
+  if(!id||!pw) return err.textContent="아이디와 비밀번호를 입력해 주세요.";
+  err.textContent=""; btn.disabled=true; btn.textContent="로그인 중...";
+  const {error}=await sb.auth.signInWithPassword({email:id+LOGIN_DOMAIN, password:pw});
+  const ok = !error && await initSession();
+  if(!ok){
+    await sb.auth.signOut();
+    err.textContent = error ? "아이디 또는 비밀번호가 맞지 않습니다." : "이 계정에 지회가 연결되어 있지 않습니다. 관리자에게 알려 주세요.";
+    btn.disabled=false; btn.textContent="로그인"; return;
+  }
+  view="home"; render(); loadResv();
 }
-async function copyLink(){
-  const l=shareLink();
-  try{ await navigator.clipboard.writeText(l); toast("링크가 복사되었습니다"); }catch(e){ prompt("아래 링크를 복사하세요",l); }
+// 로그인 상태와 이 계정의 지회 번호를 확인합니다
+async function initSession(){
+  const {data}=await sb.auth.getSession();
+  if(!data.session){ SESSION=null; CH=null; return false; }
+  const {data:p}=await sb.from("profiles").select("chapter_id, role").maybeSingle();
+  CH = p ? p.chapter_id : null; ROLE = p ? p.role : null;
+  SESSION = CH ? data.session : null;
+  return !!SESSION;
+}
+async function logout(){ await sb.auth.signOut(); SESSION=null; CH=null; ROLE=null; clearCaches(); view="home"; render(); }
+
+/* ---------- 데이터 저장·불러오기 (Supabase) ---------- */
+const toInt = v => { const s=String(v??"").replace(/[^0-9]/g,""); return s ? Number(s) : null; };
+const txt = v => (v===null||v===undefined) ? "" : String(v);
+const seoulNow = () => new Date().toLocaleString("sv-SE",{timeZone:"Asia/Seoul"});
+function ck(res){ if(res.error) throw new Error(res.error.message); return res.data; }
+// 월·일·출발시간으로 기록 순서를 정합니다 (연도는 올해, 미래 달이면 작년으로 봅니다)
+function rowKeyOf(m,d,st){
+  const mo=parseInt(m,10), da=parseInt(d,10); if(!mo||!da) return "";
+  let y=new Date().getFullYear(); if(mo>new Date().getMonth()+2) y--;
+  const tm=txt(st).match(/(\d{1,2}):(\d{2})/);
+  return `${y}-${pad(mo)}-${pad(da)} ${tm?pad(+tm[1]):"00"}:${tm?tm[2]:"00"}`;
+}
+async function tripsAll(){ return ck(await sb.from("trips").select("*").eq("chapter_id",CH).order("id")) || []; }
+function toRec(t){
+  return {rowNo:t.id, m:txt(t.m), d:txt(t.d), driver:txt(t.driver), people:txt(t.people), dest:txt(t.dest), purpose:txt(t.purpose),
+          st:txt(t.st), en:txt(t.en), odoS:txt(t.odo_s), odoE:txt(t.odo_e), dist:txt(t.dist), fix:txt(t.fix), gauge:txt(t.gauge),
+          car:txt(t.car), saved:txt(t.saved), prev:txt(t.prev), diff:txt(t.diff), flag:(t.diff!==null && t.diff!==0)};
+}
+// 해당 차량의 가장 최근 도착 계기판 (없으면 null)
+async function lastOdo(car){
+  let best=null, bk="";
+  (await tripsAll()).forEach(t=>{
+    if(txt(t.car).trim()!==car || t.odo_e===null) return;
+    const s=txt(t.saved).trim(), k=/^\d{4}-/.test(s)?s:rowKeyOf(t.m,t.d,t.st);
+    if(best===null || k>=bk){ best=Number(t.odo_e); bk=k; }
+  });
+  return best;
 }
 
-{ const q=new URLSearchParams(location.search).get("gas");
-  if(q && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q)){ setGas(q); history.replaceState(null,"",location.pathname); }
-  else GAS_URL=ls.get("gas",""); }
-render(); loadResv();
+// 화면이 "목록 불러오기"를 요청할 때 쓰는 함수
+async function api(name){
+  try{
+    if(name==="list"){
+      const rows=await tripsAll(), fuel={}, fk={}, rec={};
+      rows.forEach(t=>{
+        const cn=txt(t.car).trim(); if(!cn) return;
+        const key=rowKeyOf(t.m,t.d,t.st);
+        if(t.gauge && (fk[cn]===undefined || key>=fk[cn])){ fuel[cn]=t.gauge; fk[cn]=key; }
+        const s=txt(t.saved).trim();
+        (rec[cn]=rec[cn]||[]).push({key:/^\d{4}-/.test(s)?s:key, md:`${txt(t.m)}/${txt(t.d)}`, st:txt(t.st), en:txt(t.en),
+          driver:txt(t.driver), dest:txt(t.dest), odoS:txt(t.odo_s), odoE:txt(t.odo_e)});
+      });
+      const recent={};
+      Object.keys(rec).forEach(c=>{ rec[c].sort((x,y)=>x.key<y.key?1:x.key>y.key?-1:0); recent[c]=rec[c].slice(0,1); });
+      const active={};
+      (ck(await sb.from("active").select("*").eq("chapter_id",CH))||[]).forEach(a=>{
+        active[a.car]={driver:txt(a.driver), date:txt(a.start_date), time:txt(a.start_time), odoS:txt(a.odo_s), dest:txt(a.dest), purpose:txt(a.purpose), resId:""};
+      });
+      const cars=(ck(await sb.from("cars").select("*").eq("chapter_id",CH).eq("in_use",true).order("id"))||[])
+        .map(c=>({n:txt(c.name), p:txt(c.plate), d:txt(c.bought_on)}));
+      const drivers=(ck(await sb.from("drivers").select("*").eq("chapter_id",CH).eq("in_use",true).order("id"))||[])
+        .map(x=>txt(x.name));
+      return {ok:true, fuel, recent, active, cars, drivers};
+    }
+    if(name==="records"){
+      const st=ck(await sb.from("settings").select("value").eq("chapter_id",CH).eq("item","printCfg").maybeSingle());
+      return {ok:true, records:(await tripsAll()).map(toRec), printCfg:(st&&st.value)||defPrintCfg()};
+    }
+    if(name==="maint_list"){
+      const rows=ck(await sb.from("maintenance").select("*").eq("chapter_id",CH).order("id"))||[];
+      return {ok:true, records:rows.map(x=>({id:x.id, car:txt(x.car), date:txt(x.maint_date), kind:txt(x.kind), shop:txt(x.shop), who:txt(x.who), cost:txt(x.cost), memo:txt(x.memo)}))};
+    }
+    return {ok:false, error:"알 수 없는 요청"};
+  }catch(e){ return {ok:false, error:e.message}; }
+}
+
+// 관리자 번호는 원래 숫자를 저장하지 않고 암호화(해시)한 값만 저장합니다
+async function sha256(t){
+  const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(t)));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+// 저장 요청 (출발, 도착, 관리자 수정 등) 을 처리합니다
+async function post(d){
+  try{
+    if(!CH) throw new Error("로그인이 필요합니다. 다시 로그인해 주세요.");
+    const a=d.action;
+    if(a==="admin_check"){
+      const h=await sha256(d.pin);
+      const row=ck(await sb.from("settings").select("value").eq("chapter_id",CH).eq("item","adminPin").maybeSingle());
+      if(!row){ ck(await sb.from("settings").insert({chapter_id:CH, item:"adminPin", value:{hash:h}})); return {ok:true}; }
+      if(row.value.hash!==h) return {ok:false, error:"관리자 번호가 맞지 않습니다"};
+      return {ok:true};
+    }
+
+    // 출발: 이미 운행 중인 차량이면 거절
+    if(a==="depart"){
+      const cur=ck(await sb.from("active").select("driver").eq("chapter_id",CH).eq("car",d.car).maybeSingle());
+      if(cur) throw new Error("이미 "+cur.driver+"님이 운행 중입니다");
+      ck(await sb.from("active").insert({chapter_id:CH, car:d.car, driver:d.driver, start_date:d.date, start_time:d.time,
+        odo_s:toInt(d.odoStart), dest:d.dest||"", purpose:d.purpose||"", res_id:""}));
+      return {ok:true};
+    }
+
+    // 도착: 운행일지에 저장하고 운행 중 목록에서 뺍니다
+    if(a==="log"){
+      const sd=txt(d.startDate).split("-"), oS=toInt(d.odoStart), oE=toInt(d.odoEnd);
+      const prev=await lastOdo(d.car), diff=(prev===null||oS===null)?null:oS-prev;
+      ck(await sb.from("trips").insert({chapter_id:CH, car:d.car, m:toInt(sd[1]), d:toInt(sd[2]), driver:d.driver, people:txt(d.people),
+        dest:d.dest, purpose:d.purpose, st:d.startTime, en:d.endTime, odo_s:oS, odo_e:oE, dist:toInt(d.distance),
+        fix:d.fix||"", gauge:d.gauge||"", saved:d.savedAt, prev:prev, diff:diff}));
+      ck(await sb.from("active").delete().eq("chapter_id",CH).eq("car",d.car));
+      return {ok:true};
+    }
+
+    // 관리자: 누락 기록 추가 (직전·다음 기록의 계기판 차이를 다시 계산)
+    if(a==="log_add"){
+      const v=d.values||[], car=txt(d.car).trim();
+      if(!car) throw new Error("차량을 선택해 주세요");
+      const newKey=rowKeyOf(v[0],v[1],v[6]), oS=toInt(v[8]), oE=toInt(v[9]);
+      let pv=null, pk="", nx=null, nk="";
+      (await tripsAll()).forEach(t=>{
+        if(txt(t.car).trim()!==car) return;
+        const k=rowKeyOf(t.m,t.d,t.st); if(!k) return;
+        if(k<=newKey && (pv===null || k>=pk)){ pv=t; pk=k; }
+        if(k>newKey && (nx===null || k<nk)){ nx=t; nk=k; }
+      });
+      const prev = (pv && pv.odo_e!==null) ? Number(pv.odo_e) : null;
+      const diff = (prev===null || oS===null) ? null : oS-prev;
+      ck(await sb.from("trips").insert({chapter_id:CH, car:car, m:toInt(v[0]), d:toInt(v[1]), driver:v[2], people:txt(v[3]),
+        dest:v[4], purpose:v[5], st:v[6], en:v[7], odo_s:oS, odo_e:oE, dist:toInt(v[10]), fix:v[11]||"", gauge:v[12]||"",
+        saved:seoulNow(), prev:prev, diff:diff}));
+      if(nx && oE!==null){
+        ck(await sb.from("trips").update({prev:oE, diff:(nx.odo_s===null)?null:nx.odo_s-oE}).eq("id",nx.id));
+      }
+      return {ok:true};
+    }
+
+    // 관리자: 기록 수정·삭제
+    if(a==="log_update" || a==="log_delete"){
+      const t=ck(await sb.from("trips").select("*").eq("chapter_id",CH).eq("id",Number(d.rowNo)).maybeSingle());
+      if(!t) throw new Error("기록을 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요");
+      if(txt(t.car).trim()!==d.car) throw new Error("기록이 바뀌었습니다. 새로고침 후 다시 시도해 주세요");
+      if(a==="log_delete"){ ck(await sb.from("trips").delete().eq("id",t.id)); return {ok:true}; }
+      const v=d.values||[], oS=toInt(v[8]);
+      const diff=(t.prev===null||oS===null)?null:oS-Number(t.prev);
+      ck(await sb.from("trips").update({m:toInt(v[0]), d:toInt(v[1]), driver:v[2], people:txt(v[3]), dest:v[4], purpose:v[5],
+        st:v[6], en:v[7], odo_s:oS, odo_e:toInt(v[9]), dist:toInt(v[10]), fix:v[11]||"", gauge:v[12]||"", diff:diff}).eq("id",t.id));
+      return {ok:true};
+    }
+
+    // 관리자: 차량·운전자 목록 저장
+    if(a==="save_cfg"){
+      ck(await sb.from("cars").delete().eq("chapter_id",CH));
+      ck(await sb.from("drivers").delete().eq("chapter_id",CH));
+      const cars=(d.cars||[]).filter(c=>c.n).map(c=>({chapter_id:CH, name:c.n, plate:c.p||"", in_use:true, bought_on:c.d||""}));
+      const drv=(d.drivers||[]).map(n=>({chapter_id:CH, name:n, in_use:true}));
+      if(cars.length) ck(await sb.from("cars").insert(cars));
+      if(drv.length) ck(await sb.from("drivers").insert(drv));
+      return {ok:true};
+    }
+
+    // 관리자: 결재 라인 저장
+    if(a==="save_print"){
+      ck(await sb.from("settings").upsert({chapter_id:CH, item:"printCfg", value:d.cfg||{}}, {onConflict:"chapter_id,item"}));
+      return {ok:true};
+    }
+
+    // 정비기록 저장·삭제
+    if(a==="maint_save"){
+      const r=d.rec||{};
+      const row={chapter_id:CH, car:r.car, maint_date:r.date, kind:r.kind, shop:r.shop||"", who:r.who||"", cost:r.cost||"", memo:r.memo||""};
+      if(r.id) ck(await sb.from("maintenance").update(row).eq("chapter_id",CH).eq("id",Number(r.id)));
+      else ck(await sb.from("maintenance").insert(row));
+      return {ok:true};
+    }
+    if(a==="maint_delete"){
+      ck(await sb.from("maintenance").delete().eq("chapter_id",CH).eq("id",Number(d.id)));
+      return {ok:true};
+    }
+    throw new Error("알 수 없는 작업");
+  }catch(e){ return {ok:false, error:e.message||String(e)}; }
+}
+
+
+// 하단 메뉴: 관리자 계정에만 🔐 관리자 버튼을 보여 줍니다
+function footHtml(){
+  return `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openPw()">🔑 비밀번호 변경</button> <button class="back" style="color:#aaa" onclick="openAdmin()">🔐 관리자</button> <button class="back" style="color:#aaa" onclick="logout()">↩ 로그아웃</button></div>`;
+}
+function openPw(){ view="pw"; render(); }
+
+/* ---------- 비밀번호 변경 ---------- */
+function pwView(){
+  $("#app").innerHTML = `<button class="back" onclick="goHome()">← 돌아가기</button>
+  <div class="head"><h1>비밀번호<span>변경</span></h1></div>
+  <div class="card"><label>현재 비밀번호</label><input type="password" id="pwOld" autocomplete="current-password">
+  <label>새 비밀번호 (6자 이상)</label><input type="password" id="pwNew" autocomplete="new-password">
+  <label>새 비밀번호 확인</label><input type="password" id="pwNew2" autocomplete="new-password">
+  <div class="err" id="err"></div><button class="main g" id="pwBtn" onclick="changePw()">💾 변경</button></div>`;
+}
+async function changePw(){
+  const oldPw=$("#pwOld").value, n1=$("#pwNew").value, n2=$("#pwNew2").value, err=$("#err"), btn=$("#pwBtn");
+  if(!oldPw) return err.textContent="현재 비밀번호를 입력해 주세요.";
+  if(n1.length<6) return err.textContent="새 비밀번호는 6자 이상이어야 합니다.";
+  if(n1!==n2) return err.textContent="새 비밀번호가 서로 다릅니다.";
+  err.textContent=""; btn.disabled=true; btn.textContent="변경 중...";
+  const {error:e1}=await sb.auth.signInWithPassword({email:SESSION.user.email, password:oldPw});
+  if(e1){ err.textContent="현재 비밀번호가 맞지 않습니다."; btn.disabled=false; btn.textContent="💾 변경"; return; }
+  const {error:e2}=await sb.auth.updateUser({password:n1});
+  if(e2){ err.textContent="변경에 실패했습니다. 다시 시도해 주세요."; btn.disabled=false; btn.textContent="💾 변경"; return; }
+  toast("비밀번호가 변경되었습니다"); goHome();
+}
+
+/* ---------- 직원용 링크 ---------- */
+// 링크에는 비밀번호를 넣지 않습니다. 직원은 링크로 들어가서 지회 직원 아이디와 비밀번호를 한 번만 입력합니다.
+async function copyStaffLink(){
+  const l=location.origin+location.pathname;
+  try{ await navigator.clipboard.writeText(l); toast("직원용 링크가 복사되었습니다"); }catch(e){ prompt("아래 링크를 복사하세요", l); }
+}
+
+// 처음 열 때: 로그인되어 있으면 바로 시작, 아니면 로그인 화면
+(async()=>{ const ok=await initSession(); render(); if(ok) loadResv(); })();
+
 </script>
 </body>
 </html>
