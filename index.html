@@ -356,8 +356,8 @@ function home(){
   <div class="gbody">
   <details class="gsub"><summary><b>1. 출발할 때</b> <i>▾</i></summary><p>차량 버튼을 누르고, 계기판 숫자를 확인한 뒤 🚀 출발을 누르세요. 숫자가 다르면 직접 고쳐 주세요.</p></details>
   <details class="gsub"><summary><b>2. 출발 기록을 안 했을 때</b> <i>▾</i></summary><p>도착할 때 차량 버튼을 누르고 🚀 출발을 먼저 누르세요. 도착 화면에서 출발 옆 [수정]을 눌러 실제 출발 날짜·시간으로 맞춘 뒤, 도착 정보를 입력하고 저장하세요.</p></details>
-  <p>운행 중인 차량은 "운행중" 표시가 보이며, 그 차량을 누르면 도착 화면이 열립니다.</p>
   </div></div>
+  <p class="lbl" style="margin:10px 4px 0;line-height:1.6;font-size:calc(16px * var(--k))">운행 중인 차량은 "운행중" 표시가 보이며, 그 차량을 누르면 도착 화면이 열립니다.</p>
   <div class="sec">차량 선택</div>
   ${CARS.length||!cfgReady?"":`<div class="empty">관리자 화면에서 차량을 등록해 주세요.</div>`}<div class="cars">${CARS.map(c=>`<button class="car" onclick="pickCar('${c.n}')"><div class="bar" style="background:${c.c}"></div>
     <div class="ic" style="background:${c.bg}">${svgCar(c.c)}</div><div class="pl" style="color:${c.c}">${c.p}</div><div class="nm">${c.n}</div>
