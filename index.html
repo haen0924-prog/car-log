@@ -100,6 +100,13 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .arow1{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px}
 .arow input,.arow1 input,#pinIn{font-size:calc(16px * var(--k));margin-top:0}
 .arow button,.arow1 button{padding:8px 12px;background:#fdeaea;color:#b42318;font-weight:700;border-radius:8px;font-size:calc(14px * var(--k))}
+/* 운전자: 작은 칸으로 한 줄에 여러 명 */
+.drvgrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin-top:8px}
+.drvcell{display:flex;flex-direction:column;gap:4px;min-width:0}
+.drvcell input{padding:7px 6px;font-size:14px;text-align:center;margin-top:0;min-width:0}
+.drvcell button{padding:4px 0;font-size:12px;width:100%}
+@media (max-width:1100px){ .drvgrid{grid-template-columns:repeat(5,minmax(0,1fr))} }
+@media (max-width:600px){ .drvgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .tb{width:100%;border-collapse:collapse;font-size:calc(14px * var(--k));margin-top:12px}
 .tb td,.tb th{border-bottom:1px solid #ddd;padding:6px 4px;text-align:left}
 .tb tr.flag td{background:#fff3cd}
@@ -816,7 +823,7 @@ function adminCfgView(){
   ${adminDraft.cars.map((c,i)=>`<div class="arow"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
   <button class="main pu" onclick="adminDraft.cars.push({n:'',p:'',d:''});render()">+ 차량 추가</button>
   <b style="display:block;margin-top:18px">👤 운전자</b>
-  ${adminDraft.drivers.map((n,i)=>`<div class="arow1"><input value="${esc(n)}" placeholder="이름" oninput="adminDraft.drivers[${i}]=this.value"><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}
+  <div class="drvgrid">${adminDraft.drivers.map((n,i)=>`<div class="drvcell"><input value="${esc(n)}" placeholder="이름" oninput="adminDraft.drivers[${i}]=this.value"><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}</div>
   <button class="main pu" onclick="adminDraft.drivers.push('');render()">+ 운전자 추가</button>
   </div>`;
 }
