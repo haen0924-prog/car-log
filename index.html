@@ -408,7 +408,7 @@ async function doDepart(){
   }catch(x){ return err.textContent="출발 등록에 실패했습니다. 인터넷 연결을 확인해 주세요."; }
   const t=trips(); t[car]=tr; ls.set("trips",t);
   active[car]=tr; ls.set("active",active);
-  render(); loadResv();
+  goHome(); loadResv();
 }
 
 /* ---------- 도착 ---------- */
@@ -575,6 +575,35 @@ function adminLogView(){
   if(adminEditRow===null) return `<div>${list}</div>`;
   return `<div class="split"><div>${list}</div><div>${logEditForm()}</div></div>`;
 }
+/* 관리자 수정·추가 화면의 잔유량: 직원 화면과 같은 칸 누르기 방식 */
+function gaugeFormHtml(r){
+  const N=cellsOf(r.car), {k}=gaugeInfo(r.gauge,N), cls=k>=6?"on":k>=3?"ony":"onr";
+  const btns=Array.from({length:N},(_,i)=>`<button type="button" class="${i<k?cls:''}" onclick="setAdminG(${i+1})"></button>`).join("");
+  return `<div class="fgauge" style="grid-column:1/-1"><span class="lbl">⛽ 잔유량 (선택)</span>
+  <input type="hidden" id="f_gauge" value="${esc(r.gauge)}">
+  <div class="gz" id="fGz" style="grid-template-columns:repeat(${N},1fr);margin-top:8px">${btns}</div>
+  <div class="lbl" id="fGtxt" style="margin-top:6px">${k?k+"/"+N+"칸":"막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)"}</div></div>`;
+}
+function gaugePaint(){
+  const N=document.querySelectorAll("#fGz button").length, {k}=gaugeInfo($("#f_gauge").value,N);
+  const cls=k>=6?"on":k>=3?"ony":"onr";
+  document.querySelectorAll("#fGz button").forEach((b,i)=>{ b.className=i<k?cls:""; });
+  $("#fGtxt").textContent = k ? `${k}/${N}칸` : "막대를 눌러 선택하세요 (왼쪽 E 비어 있음 ~ 오른쪽 F 가득)";
+}
+function setAdminG(k){
+  const N=document.querySelectorAll("#fGz button").length, cur=$("#f_gauge").value;
+  $("#f_gauge").value = cur===k+"/"+N+"칸" ? "" : k+"/"+N+"칸";
+  gaugePaint();
+}
+// 차량을 바꾸면 그 차량의 칸 수로 다시 그립니다 (값은 같은 비율로 맞춤)
+function gaugeFormRedraw(){
+  const c=$("#f_car"), box=$("#fGz"); if(!c||!box) return;
+  const N=cellsOf(c.value), {k}=gaugeInfo($("#f_gauge").value,N);
+  $("#f_gauge").value = k ? k+"/"+N+"칸" : "";
+  box.style.gridTemplateColumns=`repeat(${N},1fr)`;
+  box.innerHTML=Array.from({length:N},(_,i)=>`<button type="button" onclick="setAdminG(${i+1})"></button>`).join("");
+  gaugePaint();
+}
 function logEdit(rowNo){ adminEditRow=rowNo; render(); }
 function logNew(){ adminEditRow="new"; render(); }
 function logEditForm(){
@@ -588,7 +617,7 @@ function logEditForm(){
   if(isNew) setTimeout(kmCheck,0);
   return `<div class="card cfgcard"><div class="cfghead"><div><b class="cfgttl">${isNew?'➕ 기록 추가':'✏️ 기록 수정'}</b><div class="lbl cfgnote">${isNew?'차량·날짜·운전자를 고르고 저장합니다.':esc(r.car)+' · '+esc(r.m)+'/'+esc(r.d)}</div></div><div class="hbtns"><button class="btn-save" onclick="logSave(${isNew?"'new'":r.rowNo})">💾 ${isNew?'추가':'저장'}</button>${isNew?'':`<button class="addbtn danger" onclick="logDelete(${r.rowNo})">삭제</button>`}<button class="addbtn" onclick="adminEditRow=null;render()">취소</button></div></div>
   <div class="fgrid">
-  <label>차량${isNew?`<select id="f_car" onchange="kmCheck()">${carOpts}</select>`:`<input value="${esc(r.car)}" readonly>`}</label>
+  <label>차량${isNew?`<select id="f_car" onchange="kmCheck();gaugeFormRedraw()">${carOpts}</select>`:`<input value="${esc(r.car)}" readonly>`}</label>
   <label>월<input id="f_m" type="number" min="1" max="12" value="${esc(r.m)}" ${isNew?'oninput="kmCheck()"':''}></label>
   <label>일<input id="f_d" type="number" min="1" max="31" value="${esc(r.d)}" ${isNew?'oninput="kmCheck()"':''}></label>
   <label>운전자<select id="f_driver">${dr.map(n=>`<option ${n===r.driver?'selected':''}>${esc(n)}</option>`).join("")}</select></label>
@@ -601,7 +630,7 @@ function logEditForm(){
   <label>도착 계기판(km)<input id="f_odoE" type="number" value="${esc(r.odoE)}" oninput="calcDist()"></label>
   <label>운행거리(km)<input id="f_dist" value="${esc(r.dist)}" readonly></label>
   <label>차량정비·주유<input id="f_fix" value="${esc(r.fix)}"></label>
-  <label>잔유량<input id="f_gauge" value="${esc(r.gauge)}"></label>
+  ${gaugeFormHtml(r)}
   </div>
   ${isNew?'<div class="kmbox" id="kmBox"></div>':''}
   <div class="err" id="err"></div>
