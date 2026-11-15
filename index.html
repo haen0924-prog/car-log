@@ -106,6 +106,23 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .drvcell input{padding:7px 6px;font-size:14px;text-align:center;margin-top:0;min-width:0}
 .drvcell button{padding:4px 0;font-size:12px;width:100%}
 .useck{display:flex;align-items:center;gap:3px;font-size:calc(13px * var(--k));white-space:nowrap;font-weight:600;margin:0}
+/* 차량·운전자 설정 화면 (세련된 작은 버튼) */
+.cfgcard{padding:16px 18px}
+.cfghead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px}
+.cfgttl{font-size:calc(17px * var(--k))}
+.cfgnote{margin-top:4px;line-height:1.5;font-size:12px}
+.btn-save{padding:9px 16px;background:#2f9e5f;color:#fff;font-weight:700;border-radius:12px;font-size:14px;white-space:nowrap;flex:0 0 auto}
+.sechd{display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px}
+.sechd b{font-size:15px}
+.addbtn{padding:5px 12px;background:#f1edff;color:#6d3bd8;font-weight:700;border-radius:20px;font-size:12px;border:1.5px solid #d9d0fa;white-space:nowrap}
+.arow.cfgcar{grid-template-columns:1fr 1fr 1fr auto auto;align-items:center;margin-top:6px}
+.cfgcar input{padding:8px 12px;font-size:14px;border-radius:11px;margin-top:0}
+.cfgcar button{padding:6px 12px;font-size:12px;border-radius:9px}
+.drvgrid{gap:8px}
+.drvcell{background:#f8f7f4;border-radius:12px;padding:6px}
+.drvcell input{border-radius:9px;padding:6px 6px;font-size:13px;background:#fff;border-color:#e7e4de}
+.drvcell .useck{justify-content:center;font-size:11px}
+.drvcell button{padding:3px 0;font-size:11px;border-radius:8px;background:#fdeaea;color:#b42318;font-weight:700}
 .useck input{width:auto;padding:0;margin:0}
 @media (max-width:1100px){ .drvgrid{grid-template-columns:repeat(5,minmax(0,1fr))} }
 @media (max-width:600px){ .drvgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
@@ -823,14 +840,16 @@ async function maintDelete(){
 /* 차량·운전자 목록 */
 function adminCfgView(){
   const cars=adminDraft.cars, drivers=adminDraft.drivers;
-  return `<div class="card"><button class="main g" style="margin-top:0" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div>
-  <p class="lbl" style="margin-top:8px;line-height:1.6">'사용'을 끄면 직원 화면에서 숨겨지고 기록은 그대로 남습니다. 목록에서 완전히 지우려면 삭제를 누르세요.</p>
-  <b>🚗 차량</b>
-  ${cars.map((c,i)=>`<div class="arow" style="grid-template-columns:1fr 1fr 1fr auto auto"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><label class="useck"><input type="checkbox" ${c.u!==false?'checked':''} onchange="adminDraft.cars[${i}].u=this.checked"> 사용</label><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
-  <button class="main pu" onclick="adminDraft.cars.push({n:'',p:'',d:'',u:true});render()">+ 차량 추가</button>
-  <b style="display:block;margin-top:18px">👤 운전자</b>
+  return `<div class="card cfgcard">
+  <div class="cfghead">
+    <div><b class="cfgttl">차량·운전자 설정</b><div class="lbl cfgnote">'사용'을 끄면 직원 화면에서 숨겨지고 기록은 남습니다. 삭제는 목록에서 완전히 지웁니다.</div></div>
+    <button class="btn-save" onclick="adminSave()">💾 저장</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="sechd"><b>🚗 차량</b><button class="addbtn" onclick="adminDraft.cars.push({n:'',p:'',d:'',u:true});render()">+ 차량 추가</button></div>
+  ${cars.map((c,i)=>`<div class="arow cfgcar"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><label class="useck"><input type="checkbox" ${c.u!==false?'checked':''} onchange="adminDraft.cars[${i}].u=this.checked"> 사용</label><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
+  <div class="sechd"><b>👤 운전자</b><button class="addbtn" onclick="adminDraft.drivers.push({n:'',u:true});render()">+ 운전자 추가</button></div>
   <div class="drvgrid">${drivers.map((x,i)=>`<div class="drvcell"><input value="${esc(x.n)}" placeholder="이름" oninput="adminDraft.drivers[${i}].n=this.value"><label class="useck"><input type="checkbox" ${x.u!==false?'checked':''} onchange="adminDraft.drivers[${i}].u=this.checked"> 사용</label><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}</div>
-  <button class="main pu" onclick="adminDraft.drivers.push({n:'',u:true});render()">+ 운전자 추가</button>
   </div>`;
 }
 function adminDel(kind,i){ adminDraft[kind].splice(i,1); render(); }
