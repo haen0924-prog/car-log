@@ -301,7 +301,6 @@ async function loadResv(){
 function render(){
   document.body.classList.toggle("pc", view==="admin");
   if(!SESSION) return loginView();
-  if(view==="pw") return pwView();
   if(view==="admin") return adminView();
   if(!driver) return pickDriver();
   if(!car) return home();
@@ -482,8 +481,8 @@ function openAdmin(){ view="admin"; adminPin=""; adminDraft=null; adminRecs=null
 function adminView(){
   if(!adminPin) return adminGate();
   if(!adminDraft) adminDraft = ALLCFG ? {cars:ALLCFG.cars.map(c=>({...c})), drivers:ALLCFG.drivers.map(x=>({...x}))} : {cars:CARS.map(c=>({n:c.n,p:c.p||"",d:c.d||"",u:true})), drivers:DRIVERS.map(n=>({n,u:true}))};
-  const tabs=[["log","📋 운행일지"],["print","🖨 일지 인쇄"],["maint","🔧 정비기록"],["cfg","🚗 차량·운전자"]];
-  const body = adminTab==="log" ? adminLogView() : adminTab==="print" ? adminPrintView() : adminTab==="maint" ? adminMaintView() : adminCfgView();
+  const tabs=[["log","📋 운행일지"],["print","🖨 일지 인쇄"],["maint","🔧 정비기록"],["cfg","🚗 차량·운전자"],["pw","🔑 비밀번호"]];
+  const body = adminTab==="log" ? adminLogView() : adminTab==="print" ? adminPrintView() : adminTab==="maint" ? adminMaintView() : adminTab==="pw" ? adminPwView() : adminCfgView();
   $("#app").innerHTML = `<div class="topbar"><button class="back" onclick="goHome()">← 돌아가기</button><button class="back" onclick="copyStaffLink()">🔗 직원용 링크 복사</button><button class="back" onclick="toggleFull()">⛶ 전체화면</button></div>
   <div class="head"><h1>관리자<span>화면</span></h1></div>
   <div class="adm"><nav class="side">${tabs.map(([k,l])=>`<button class="${adminTab===k?'on':''}" onclick="adminGo('${k}')">${l}</button>`).join("")}</nav>
@@ -891,6 +890,18 @@ function adminCfgView(){
   <div class="drvgrid">${drivers.map((x,i)=>`<div class="drvcell"><input value="${esc(x.n)}" placeholder="이름" oninput="adminDraft.drivers[${i}].n=this.value"><label class="useck"><input type="checkbox" ${x.u!==false?'checked':''} onchange="adminDraft.drivers[${i}].u=this.checked"> 사용</label><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}</div>
   </div>`;
 }
+/* 비밀번호 변경 (관리자 탭) */
+function adminPwView(){
+  return `<div class="card cfgcard">
+  <div class="cfghead"><div><b class="cfgttl">🔑 비밀번호 변경</b><div class="lbl cfgnote">지회 로그인 비밀번호를 바꿉니다. 바꾼 뒤에는 직원들에게도 알려 주세요.</div></div>
+  <div class="hbtns"><button class="btn-save" id="pwBtn" onclick="changePw()">💾 변경</button></div></div>
+  <div class="fgrid">
+  <label>현재 비밀번호<input type="password" id="pwOld" autocomplete="current-password"></label>
+  <label>새 비밀번호 (6자 이상)<input type="password" id="pwNew" autocomplete="new-password"></label>
+  <label>새 비밀번호 확인<input type="password" id="pwNew2" autocomplete="new-password"></label>
+  </div>
+  <div class="err" id="err"></div></div>`;
+}
 function adminDel(kind,i){ adminDraft[kind].splice(i,1); render(); }
 async function adminSave(){
   const err=$("#err"); err.textContent="";
@@ -1122,19 +1133,10 @@ async function post(d){
 
 // 하단 메뉴: 관리자 계정에만 🔐 관리자 버튼을 보여 줍니다
 function footHtml(){
-  return `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openPw()">🔑 비밀번호 변경</button> <button class="back" style="color:#aaa" onclick="openAdmin()">🔐 관리자</button> <button class="back" style="color:#aaa" onclick="logout()">↩ 로그아웃</button></div>`;
+  return `<div style="text-align:center;margin-top:26px"><button class="back" style="color:#aaa" onclick="openAdmin()">🔐 관리자</button> <button class="back" style="color:#aaa" onclick="logout()">↩ 로그아웃</button></div>`;
 }
-function openPw(){ view="pw"; render(); }
 
 /* ---------- 비밀번호 변경 ---------- */
-function pwView(){
-  $("#app").innerHTML = `<button class="back" onclick="goHome()">← 돌아가기</button>
-  <div class="head"><h1>비밀번호<span>변경</span></h1></div>
-  <div class="card"><label>현재 비밀번호</label><input type="password" id="pwOld" autocomplete="current-password">
-  <label>새 비밀번호 (6자 이상)</label><input type="password" id="pwNew" autocomplete="new-password">
-  <label>새 비밀번호 확인</label><input type="password" id="pwNew2" autocomplete="new-password">
-  <div class="err" id="err"></div><button class="main g" id="pwBtn" onclick="changePw()">💾 변경</button></div>`;
-}
 async function changePw(){
   const oldPw=$("#pwOld").value, n1=$("#pwNew").value, n2=$("#pwNew2").value, err=$("#err"), btn=$("#pwBtn");
   if(!oldPw) return err.textContent="현재 비밀번호를 입력해 주세요.";
@@ -1145,6 +1147,7 @@ async function changePw(){
   if(e1){ err.textContent="현재 비밀번호가 맞지 않습니다."; btn.disabled=false; btn.textContent="💾 변경"; return; }
   const {error:e2}=await sb.auth.updateUser({password:n1});
   if(e2){ err.textContent="변경에 실패했습니다. 다시 시도해 주세요."; btn.disabled=false; btn.textContent="💾 변경"; return; }
+  if(view==="admin"){ ["pwOld","pwNew","pwNew2"].forEach(i=>{ $("#"+i).value=""; }); btn.disabled=false; btn.textContent="💾 변경"; toast("비밀번호가 변경되었습니다"); return; }
   toast("비밀번호가 변경되었습니다"); goHome();
 }
 
