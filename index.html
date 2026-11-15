@@ -125,6 +125,7 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .sechd{display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px}
 .sechd b{font-size:15px}
 .addbtn{padding:5px 12px;background:#f1edff;color:#6d3bd8;font-weight:700;border-radius:20px;font-size:12px;border:1.5px solid #d9d0fa;white-space:nowrap}
+.cfghd{margin-top:14px;padding:0 2px}.cfghd span{font-size:12px;color:#888;font-weight:700;text-align:left}
 .arow.cfgcar{grid-template-columns:1fr 1fr 1fr 96px auto auto;align-items:center;margin-top:6px}
 .cfgcar input{padding:8px 12px;font-size:14px;border-radius:11px;margin-top:0}
 .cfgcar button{padding:6px 12px;font-size:12px;border-radius:9px}
@@ -191,7 +192,7 @@ body.pc .head h1{font-size:22px;margin:4px 0 8px}
 body.pc .head{margin-bottom:6px}
 @media print{
   @page{size:A4 portrait;margin:12mm}
-  .pg{height:273mm;padding:0;border:0;overflow:hidden;box-sizing:border-box;page-break-inside:avoid;display:flex;flex-direction:column;justify-content:center}
+  .pg{margin:0!important;height:270mm;padding:0;border:0;overflow:hidden;box-sizing:border-box;page-break-inside:avoid;display:flex;flex-direction:column;justify-content:center}
   .pt2 td{height:9.5mm}
   .pt2 tr.blank td{height:9.5mm}
   .pno{margin-top:6mm;margin-bottom:2mm}
@@ -939,6 +940,7 @@ function adminCfgView(){
   </div>
   <div class="err" id="err"></div>
   <div class="sechd"><b>🚗 차량</b><button class="addbtn" onclick="adminDraft.cars.push({n:'',p:'',d:'',g:10,u:true});render()">+ 차량 추가</button></div>
+  <div class="arow cfgcar cfghd"><span>차량명</span><span>차량 번호</span><span>구입일</span><span>주유칸</span><span>사용</span><span></span></div>
   ${cars.map((c,i)=>`<div class="arow cfgcar"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><input type="number" min="1" max="20" value="${c.g||10}" placeholder="기름칸" title="기름칸 수 (기본 10칸)" oninput="adminDraft.cars[${i}].g=this.value"><label class="useck"><input type="checkbox" ${c.u!==false?'checked':''} onchange="adminDraft.cars[${i}].u=this.checked"> 사용</label><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
   <div class="sechd"><b>👤 운전자</b><button class="addbtn" onclick="adminDraft.drivers.push({n:'',u:true});render()">+ 운전자 추가</button></div>
   <div class="drvgrid">${drivers.map((x,i)=>`<div class="drvcell"><input value="${esc(x.n)}" placeholder="이름" oninput="adminDraft.drivers[${i}].n=this.value"><label class="useck"><input type="checkbox" ${x.u!==false?'checked':''} onchange="adminDraft.drivers[${i}].u=this.checked"> 사용</label><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}</div>
