@@ -194,6 +194,11 @@ body.pc .head{margin-bottom:6px}
 .signrow{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-top:12px}
 .signrow .cnt{width:120px;flex:0 0 120px;margin-top:0;font-size:calc(16px * var(--k))}
 .signrow .tt{flex:1 1 0;min-width:0;margin-top:0;font-size:calc(16px * var(--k))}
+.pcols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.pcols2{grid-template-columns:1fr}}
+.hbtns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.addbtn.danger{background:#fdeaea;color:#b42318;border-color:#f3c4c4}
+.sechd .carsel{width:auto;min-width:200px;margin:0;padding:8px 12px;font-size:14px;border-radius:11px}
 .sigsel{width:auto;min-width:200px;margin:0;padding:8px 12px;font-size:14px;border-radius:11px}
 .pills{display:flex;gap:6px}
 .addbtn.on{background:#6d3bd8;color:#fff;border-color:#6d3bd8}
@@ -539,9 +544,10 @@ function adminLogView(){
   if(adminRecs===null) return loadingCard();
   const labelOf={}; CARS.forEach(c=>carPages(c).forEach(pg=>pg.rows.forEach(r=>{ labelOf[r.rowNo]=pg.label; })));
   const rows=adminRecs.filter(r=>!adminCar||r.car===adminCar).slice().reverse();
-  const list=`${missingCard()}<div class="card">${carSelect(true)}
-  <button class="main g" onclick="logNew()">➕ 기록 추가</button>
-  <button class="main pu" onclick="adminLoad('records')">↻ 새로고침</button>
+  const list=`${missingCard()}<div class="card cfgcard">
+  <div class="cfghead"><div><b class="cfgttl">📋 운행일지</b><div class="lbl cfgnote">기록을 추가하거나 고쳐 씁니다. 노란색 행은 계기판 차이가 있는 기록입니다.</div></div>
+  <div class="hbtns"><button class="addbtn" onclick="adminLoad('records')">↻ 새로고침</button><button class="btn-save" onclick="logNew()">➕ 기록 추가</button></div></div>
+  <div class="sechd"><b>🚗 차량</b>${carSelect(true)}</div>
   <div class="scroll"><table class="tb wide"><tr><th>월/일</th><th>쪽</th><th>차량</th><th>운전자</th><th>탑승</th><th>행선지</th><th>목적</th><th>출발</th><th>도착</th><th>출발km</th><th>도착km</th><th>거리</th><th>차량정비·주유</th><th>잔유량</th><th></th></tr>
   ${rows.map(r=>`<tr class="${r.flag?'flag':''}"><td>${esc(r.m)}/${esc(r.d)}</td><td>${esc(labelOf[r.rowNo]||'-')}</td><td>${esc(r.car)}</td><td>${esc(r.driver)}</td><td>${esc(r.people)}</td><td>${esc(r.dest)}</td><td>${esc(r.purpose)}</td><td>${esc(r.st)}</td><td>${esc(r.en)}</td><td>${esc(r.odoS)}</td><td>${esc(r.odoE)}</td><td>${esc(r.dist)}</td><td>${esc(r.fix)}</td><td>${esc(r.gauge)}</td><td><button class="mini" onclick="logEdit(${r.rowNo})">수정</button></td></tr>`).join("")||'<tr><td colspan="15">기록이 없습니다</td></tr>'}
   </table></div></div>`;
@@ -559,7 +565,7 @@ function logEditForm(){
   const dr = (!r.driver || DRIVERS.includes(r.driver)) ? DRIVERS : [r.driver, ...DRIVERS];
   const carOpts = CARS.map(c=>`<option ${c.n===r.car?'selected':''}>${esc(c.n)}</option>`).join("");
   if(isNew) setTimeout(kmCheck,0);
-  return `<div class="card"><b style="font-size:calc(17px * var(--k))">${isNew?'➕ 기록 추가':'기록 수정 · '+esc(r.car)+' · '+esc(r.m)+'/'+esc(r.d)}</b>
+  return `<div class="card cfgcard"><div class="cfghead"><div><b class="cfgttl">${isNew?'➕ 기록 추가':'✏️ 기록 수정'}</b><div class="lbl cfgnote">${isNew?'차량·날짜·운전자를 고르고 저장합니다.':esc(r.car)+' · '+esc(r.m)+'/'+esc(r.d)}</div></div><div class="hbtns"><button class="btn-save" onclick="logSave(${isNew?"'new'":r.rowNo})">💾 ${isNew?'추가':'저장'}</button>${isNew?'':`<button class="addbtn danger" onclick="logDelete(${r.rowNo})">삭제</button>`}<button class="addbtn" onclick="adminEditRow=null;render()">취소</button></div></div>
   <div class="fgrid">
   <label>차량${isNew?`<select id="f_car" onchange="kmCheck()">${carOpts}</select>`:`<input value="${esc(r.car)}" readonly>`}</label>
   <label>월<input id="f_m" type="number" min="1" max="12" value="${esc(r.m)}" ${isNew?'oninput="kmCheck()"':''}></label>
@@ -578,9 +584,7 @@ function logEditForm(){
   </div>
   ${isNew?'<div class="kmbox" id="kmBox"></div>':''}
   <div class="err" id="err"></div>
-  <button class="main g" onclick="logSave(${isNew?"'new'":r.rowNo})">💾 ${isNew?'추가':'저장'}</button>
-  ${isNew?'':`<button class="main" style="background:#b42318" onclick="logDelete(${r.rowNo})">🗑 이 기록 삭제</button>`}
-  <button class="main" style="background:#888" onclick="adminEditRow=null;render()">취소</button></div>`;
+</div>`;
 }
 const pad2 = n => String(n).padStart(2,"0");
 // 같은 차량에서 이 날짜·시간 직전의 기록 (없으면 null)
@@ -791,7 +795,9 @@ function adminPrintView(){
     return `<tr><td>${esc(c.n)}</td><td>${n}줄</td><td>${pages.length}쪽</td><td>${left===0?'✅ 20줄 완성 (인쇄 가능)':'다음 쪽까지 '+left+'줄'}</td></tr>`;
   }).join("");
   const vlist = (()=>{ const sel=[]; targets.forEach(c=>carPages(c).forEach(pg=>{ if(adminOn[pageKey(c.n,pg.label)]) sel.push(`<div class="selrow">${esc(c.n)} · <b>${esc(pg.label)}</b> <span class="lbl">(${pg.rows.length}줄)</span></div>`); })); return sel.length ? sel.join("") : '<p class="lbl">아직 고른 쪽이 없습니다. 왼쪽에서 쪽을 체크해 주세요.</p>'; })();
-  return `<div class="noprint">${printSetCard()}</div>
+  return `<div class="pcols2 noprint"><div>${printSetCard()}</div><div class="card cfgcard">
+  <div class="cfghead"><div><b class="cfgttl">📊 차량별 현황</b><div class="lbl cfgnote">차량마다 기록 줄 수와 쪽 수를 보여 줍니다.</div></div></div>
+  <table class="tb"><tr><th>차량</th><th>기록</th><th>쪽 수</th><th>상태</th></tr>${status}</table></div></div>
   <div class="pcols noprint">
     <div class="card">
       ${printCarSelect()}
@@ -805,8 +811,6 @@ function adminPrintView(){
       <p class="lbl" style="margin-top:8px;line-height:1.6">번호는 기록의 저장 연도 기준으로 붙고, 연도가 바뀌면 01부터 다시 시작합니다. 노란색 행은 계기판 차이가 있는 기록입니다. 인쇄 창에서 "배경 그래픽"을 켜 주세요.</p>
     </div>
   </div>
-  <div class="card noprint"><b>차량별 현황</b>
-  <table class="tb"><tr><th>차량</th><th>기록</th><th>쪽 수</th><th>상태</th></tr>${status}</table></div>
   <div id="printArea">${html}</div>`;
 }
 
@@ -817,12 +821,13 @@ function adminMaintView(){
   const rows=adminMaint.filter(m=>!adminCar||m.car===adminCar);
   const targets=(adminCar && adminCar!=="__ALL__") ? CARS.filter(x=>x.n===adminCar) : CARS;
   const defCar = adminCar || (CARS[0]?CARS[0].n:"");
-  return `<div class="card noprint">${carSelect(true)}
-  <button class="main g" onclick="adminEditMaint={id:'',car:'${esc(defCar)}',date:'',kind:'',shop:'',who:'',cost:'',memo:''};render()">+ 정비 기록 추가</button>
+  return `<div class="card cfgcard noprint">
+  <div class="cfghead"><div><b class="cfgttl">🔧 정비기록</b><div class="lbl cfgnote">차량별 정비 내역을 기록하고, 관리대장으로 인쇄합니다.</div></div>
+  <div class="hbtns"><button class="addbtn" onclick="printPages()">🖨 목록 인쇄</button><button class="btn-save" onclick="adminEditMaint={id:'',car:'${esc(defCar)}',date:'',kind:'',shop:'',who:'',cost:'',memo:''};render()">+ 정비 기록 추가</button></div></div>
+  <div class="sechd"><b>🚗 차량</b>${carSelect(true)}</div>
   <table class="tb"><tr><th>차량</th><th>일시</th><th>구분</th><th>정비소</th><th>담당</th><th>비용</th><th>내용</th><th></th></tr>
   ${rows.map(m=>`<tr><td>${esc(m.car)}</td><td>${esc(m.date)}</td><td>${esc(m.kind)}</td><td>${esc(m.shop)}</td><td>${esc(m.who)}</td><td>${esc(m.cost)}</td><td>${esc(m.memo)}</td><td><button class="mini" onclick="maintEdit('${esc(m.id)}')">수정</button></td></tr>`).join("")||'<tr><td colspan="8">정비 기록이 없습니다</td></tr>'}
-  </table>
-  <button class="main pu" onclick="printPages()">🖨 목록 인쇄</button></div>
+  </table></div>
   <div id="printArea">${mPrintHtml(targets)}</div>`;
 }
 function mPrintHtml(targets){
@@ -838,7 +843,7 @@ function mPrintHtml(targets){
 function maintEdit(id){ adminEditMaint=adminMaint.find(m=>m.id===id)||null; render(); }
 function maintForm(){
   const m=adminEditMaint, isNew=!m.id;
-  return `<div class="card"><b style="font-size:calc(17px * var(--k))">${isNew?'정비 기록 추가':'정비 기록 수정'}</b>
+  return `<div class="card cfgcard"><div class="cfghead"><div><b class="cfgttl">${isNew?'➕ 정비 기록 추가':'✏️ 정비 기록 수정'}</b><div class="lbl cfgnote">차량·일시·구분을 적고 저장합니다.</div></div><div class="hbtns"><button class="btn-save" onclick="maintSave()">💾 저장</button>${isNew?'':`<button class="addbtn danger" onclick="maintDelete()">삭제</button>`}<button class="addbtn" onclick="adminEditMaint=null;render()">취소</button></div></div>
   <div class="fgrid">
   <label>차량<select id="m_car">${CARS.map(c=>`<option ${c.n===m.car?'selected':''}>${esc(c.n)}</option>`).join("")}</select></label>
   <label>일시<input id="m_date" type="date" value="${esc(m.date)}"></label>
@@ -848,9 +853,7 @@ function maintForm(){
   <label>비용(원)<input id="m_cost" value="${esc(m.cost)}"></label>
   <label style="grid-column:1/-1">내용·비고<textarea id="m_memo" rows="3">${esc(m.memo)}</textarea></label>
   </div><div class="err" id="err"></div>
-  <button class="main g" onclick="maintSave()">💾 저장</button>
-  ${isNew?'':`<button class="main" style="background:#b42318" onclick="maintDelete()">🗑 이 기록 삭제</button>`}
-  <button class="main" style="background:#888" onclick="adminEditMaint=null;render()">취소</button></div>`;
+</div>`;
 }
 async function maintSave(){
   const err=$("#err"); err.textContent="";
