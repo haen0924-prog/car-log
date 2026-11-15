@@ -192,7 +192,7 @@ body.pc .head h1{font-size:22px;margin:4px 0 8px}
 body.pc .head{margin-bottom:6px}
 @media print{
   @page{size:A4 portrait;margin:12mm}
-  .pg{margin:0!important;height:270mm;padding:0;border:0;overflow:hidden;box-sizing:border-box;page-break-inside:avoid;display:flex;flex-direction:column;justify-content:center}
+  .pg{margin:0!important;height:auto;padding:0;border:0;box-sizing:border-box;page-break-inside:avoid}
   .pt2 td{height:9.5mm}
   .pt2 tr.blank td{height:9.5mm}
   .pno{margin-top:6mm;margin-bottom:2mm}
@@ -861,7 +861,7 @@ function adminPrintView(){
       <b>선택된 쪽 (${picked})</b>
       <div class="selbox">${vlist}</div>
       <button class="main pu" onclick="printPages()">🖨 선택한 ${picked}쪽 인쇄 / PDF 저장</button>
-      <p class="lbl" style="margin-top:8px;line-height:1.6">번호는 기록의 저장 연도 기준으로 붙고, 연도가 바뀌면 01부터 다시 시작합니다. 노란색 행은 계기판 차이가 있는 기록입니다. 인쇄 창에서 "배경 그래픽"을 켜 주세요.</p>
+      <p class="lbl" style="margin-top:8px;line-height:1.6">번호는 기록의 저장 연도 기준으로 붙고, 연도가 바뀌면 01부터 다시 시작합니다. 노란색 행은 계기판 차이가 있는 기록입니다. 인쇄 창에서 "배경 그래픽"을 켜 주시고, 여백은 "없음"을 선택해 주세요. (여백을 "기본값"으로 두면 빈 페이지가 한 장 더 나올 수 있습니다.)</p>
     </div>
   </div>
   <div id="printArea">${html}</div>`;
