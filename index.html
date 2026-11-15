@@ -105,6 +105,8 @@ input,select{width:100%;padding:13px;border:1.5px solid #dcd8d1;border-radius:14
 .drvcell{display:flex;flex-direction:column;gap:4px;min-width:0}
 .drvcell input{padding:7px 6px;font-size:14px;text-align:center;margin-top:0;min-width:0}
 .drvcell button{padding:4px 0;font-size:12px;width:100%}
+.useck{display:flex;align-items:center;gap:3px;font-size:calc(13px * var(--k));white-space:nowrap;font-weight:600;margin:0}
+.useck input{width:auto;padding:0;margin:0}
 @media (max-width:1100px){ .drvgrid{grid-template-columns:repeat(5,minmax(0,1fr))} }
 @media (max-width:600px){ .drvgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .tb{width:100%;border-collapse:collapse;font-size:calc(14px * var(--k));margin-top:12px}
@@ -204,7 +206,7 @@ body.pc .head{margin-bottom:6px}
 const SB_URL = "https://hxldwxvdxnkyygzfyiwx.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4bGR3eHZkeG5reXlnemZ5aXd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDQ5NjIsImV4cCI6MjA4OTU4MDk2Mn0.cSv6iNUEVSNERvxZFUAbqFs4d9SizhY-8O63sHfepFQ";
 const sb = supabase.createClient(SB_URL, SB_KEY);
-let SESSION = null, CH = null, ROLE = null;  // SESSION: 로그인 상태, CH: 이 지회 번호
+let SESSION = null, CH = null, ROLE = null, ALLCFG = null;  // SESSION: 로그인 상태, CH: 이 지회 번호, ALLCFG: 사용 중단 포함 전체 목록
 const PALETTE = [{c:"#3b5bdb",bg:"#eaeefd"},{c:"#3d8361",bg:"#e8f3ee"},{c:"#b5622e",bg:"#faeee4"},{c:"#7239d8",bg:"#f1edff"},{c:"#d6336c",bg:"#fdeaf1"},{c:"#0c8599",bg:"#e3f6f9"}];
 let DRIVERS = [], CARS = [];
 function applyCfg(cars,drivers){ CARS=cars.map((x,i)=>({...x,...PALETTE[i%PALETTE.length]})); DRIVERS=drivers; }
@@ -258,6 +260,7 @@ async function loadResv(){
     const rec=lastRec(car), o=$("#odoS");
     if(o && o.dataset.auto==="1" && rec) o.value=rec.odoE;
     if($("#recBox")) refreshRecent();
+    if(j.ok && j.allCars){ ALLCFG={cars:j.allCars, drivers:j.allDrivers}; }
     if(j.ok && j.cars && j.drivers){
       applyCfg(j.cars,j.drivers); ls.set("cfg",{cars:j.cars,drivers:j.drivers}); cfgReady=true; cfgFail=false;
       if(driver && !DRIVERS.includes(driver)){ driver=null; localStorage.removeItem("driver"); car=null; view="home"; }
@@ -450,7 +453,7 @@ function loadingCard(){ return `<div class="card empty" style="margin-top:12px">
 function openAdmin(){ view="admin"; adminPin=""; adminDraft=null; adminRecs=null; adminMaint=null; adminTab="log"; adminCar=""; adminEditRow=null; adminEditMaint=null; adminOn={}; adminPrefill=null; render(); }
 function adminView(){
   if(!adminPin) return adminGate();
-  if(!adminDraft) adminDraft={cars:CARS.map(c=>({n:c.n,p:c.p||"",d:c.d||""})), drivers:[...DRIVERS]};
+  if(!adminDraft) adminDraft = ALLCFG ? {cars:ALLCFG.cars.map(c=>({...c})), drivers:ALLCFG.drivers.map(x=>({...x}))} : {cars:CARS.map(c=>({n:c.n,p:c.p||"",d:c.d||"",u:true})), drivers:DRIVERS.map(n=>({n,u:true}))};
   const tabs=[["log","📋 운행일지"],["print","🖨 일지 인쇄"],["maint","🔧 정비기록"],["cfg","🚗 차량·운전자"]];
   const body = adminTab==="log" ? adminLogView() : adminTab==="print" ? adminPrintView() : adminTab==="maint" ? adminMaintView() : adminCfgView();
   $("#app").innerHTML = `<div class="topbar"><button class="back" onclick="goHome()">← 돌아가기</button><button class="back" onclick="copyStaffLink()">🔗 직원용 링크 복사</button><button class="back" onclick="toggleFull()">⛶ 전체화면</button></div>
@@ -819,21 +822,24 @@ async function maintDelete(){
 
 /* 차량·운전자 목록 */
 function adminCfgView(){
-  return `<div class="card"><button class="main g" style="margin-top:0" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div><b>🚗 차량</b>
-  ${adminDraft.cars.map((c,i)=>`<div class="arow"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
-  <button class="main pu" onclick="adminDraft.cars.push({n:'',p:'',d:''});render()">+ 차량 추가</button>
+  const cars=adminDraft.cars, drivers=adminDraft.drivers;
+  return `<div class="card"><button class="main g" style="margin-top:0" onclick="adminSave()">💾 저장</button><div class="err" id="err"></div>
+  <p class="lbl" style="margin-top:8px;line-height:1.6">'사용'을 끄면 직원 화면에서 숨겨지고 기록은 그대로 남습니다. 목록에서 완전히 지우려면 삭제를 누르세요.</p>
+  <b>🚗 차량</b>
+  ${cars.map((c,i)=>`<div class="arow" style="grid-template-columns:1fr 1fr 1fr auto auto"><input value="${esc(c.n)}" placeholder="차량명" oninput="adminDraft.cars[${i}].n=this.value"><input value="${esc(c.p)}" placeholder="번호판" oninput="adminDraft.cars[${i}].p=this.value"><input value="${esc(c.d||'')}" placeholder="구입일 (예: 2023.05.22)" oninput="adminDraft.cars[${i}].d=this.value"><label class="useck"><input type="checkbox" ${c.u!==false?'checked':''} onchange="adminDraft.cars[${i}].u=this.checked"> 사용</label><button onclick="adminDel('cars',${i})">삭제</button></div>`).join("")}
+  <button class="main pu" onclick="adminDraft.cars.push({n:'',p:'',d:'',u:true});render()">+ 차량 추가</button>
   <b style="display:block;margin-top:18px">👤 운전자</b>
-  <div class="drvgrid">${adminDraft.drivers.map((n,i)=>`<div class="drvcell"><input value="${esc(n)}" placeholder="이름" oninput="adminDraft.drivers[${i}]=this.value"><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}</div>
-  <button class="main pu" onclick="adminDraft.drivers.push('');render()">+ 운전자 추가</button>
+  <div class="drvgrid">${drivers.map((x,i)=>`<div class="drvcell"><input value="${esc(x.n)}" placeholder="이름" oninput="adminDraft.drivers[${i}].n=this.value"><label class="useck"><input type="checkbox" ${x.u!==false?'checked':''} onchange="adminDraft.drivers[${i}].u=this.checked"> 사용</label><button onclick="adminDel('drivers',${i})">삭제</button></div>`).join("")}</div>
+  <button class="main pu" onclick="adminDraft.drivers.push({n:'',u:true});render()">+ 운전자 추가</button>
   </div>`;
 }
 function adminDel(kind,i){ adminDraft[kind].splice(i,1); render(); }
 async function adminSave(){
   const err=$("#err"); err.textContent="";
-  const cars=adminDraft.cars.map(c=>({n:(c.n||"").trim(),p:(c.p||"").trim(),d:(c.d||"").trim()})).filter(c=>c.n);
-  const drivers=adminDraft.drivers.map(s=>(s||"").trim()).filter(Boolean);
-  if(!cars.length) return err.textContent="차량을 한 대 이상 입력해 주세요.";
-  if(!drivers.length) return err.textContent="운전자를 한 명 이상 입력해 주세요.";
+  const cars=adminDraft.cars.map(c=>({n:(c.n||"").trim(),p:(c.p||"").trim(),d:(c.d||"").trim(),u:c.u!==false})).filter(c=>c.n);
+  const drivers=adminDraft.drivers.map(x=>({n:(x.n||"").trim(),u:x.u!==false})).filter(x=>x.n);
+  if(!cars.some(c=>c.u)) return err.textContent="사용 중인 차량을 한 대 이상 체크해 주세요.";
+  if(!drivers.some(x=>x.u)) return err.textContent="사용 중인 운전자를 한 명 이상 체크해 주세요.";
   try{
     const j=await post({action:"save_cfg", pin:adminPin, cars, drivers});
     if(!j.ok) throw new Error(j.error);
@@ -928,11 +934,13 @@ async function api(name){
       (ck(await sb.from("active").select("*").eq("chapter_id",CH))||[]).forEach(a=>{
         active[a.car]={driver:txt(a.driver), date:txt(a.start_date), time:txt(a.start_time), odoS:txt(a.odo_s), dest:txt(a.dest), purpose:txt(a.purpose), resId:""};
       });
-      const cars=(ck(await sb.from("cars").select("*").eq("chapter_id",CH).eq("in_use",true).order("id"))||[])
-        .map(c=>({n:txt(c.name), p:txt(c.plate), d:txt(c.bought_on)}));
-      const drivers=(ck(await sb.from("drivers").select("*").eq("chapter_id",CH).eq("in_use",true).order("id"))||[])
-        .map(x=>txt(x.name));
-      return {ok:true, fuel, recent, active, cars, drivers};
+      const allCars=(ck(await sb.from("cars").select("*").eq("chapter_id",CH).order("id"))||[])
+        .map(c=>({n:txt(c.name), p:txt(c.plate), d:txt(c.bought_on), u:c.in_use!==false}));
+      const allDrivers=(ck(await sb.from("drivers").select("*").eq("chapter_id",CH).order("id"))||[])
+        .map(x=>({n:txt(x.name), u:x.in_use!==false}));
+      const cars=allCars.filter(c=>c.u).map(c=>({n:c.n, p:c.p, d:c.d}));
+      const drivers=allDrivers.filter(x=>x.u).map(x=>x.n);
+      return {ok:true, fuel, recent, active, cars, drivers, allCars, allDrivers};
     }
     if(name==="records"){
       const st=ck(await sb.from("settings").select("value").eq("chapter_id",CH).eq("item","printCfg").maybeSingle());
@@ -1024,8 +1032,8 @@ async function post(d){
     if(a==="save_cfg"){
       ck(await sb.from("cars").delete().eq("chapter_id",CH));
       ck(await sb.from("drivers").delete().eq("chapter_id",CH));
-      const cars=(d.cars||[]).filter(c=>c.n).map(c=>({chapter_id:CH, name:c.n, plate:c.p||"", in_use:true, bought_on:c.d||""}));
-      const drv=(d.drivers||[]).map(n=>({chapter_id:CH, name:n, in_use:true}));
+      const cars=(d.cars||[]).filter(c=>c.n).map(c=>({chapter_id:CH, name:c.n, plate:c.p||"", in_use:c.u!==false, bought_on:c.d||""}));
+      const drv=(d.drivers||[]).filter(x=>x.n).map(x=>({chapter_id:CH, name:x.n, in_use:x.u!==false}));
       if(cars.length) ck(await sb.from("cars").insert(cars));
       if(drv.length) ck(await sb.from("drivers").insert(drv));
       return {ok:true};
